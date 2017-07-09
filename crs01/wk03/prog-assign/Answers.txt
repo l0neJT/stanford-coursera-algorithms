@@ -1,0 +1,3 @@
+First element: 162085
+Last element: 164123
+Median of Three: 138382
