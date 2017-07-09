@@ -10,6 +10,7 @@
 from collections import defaultdict
 from string import rstrip
 import json
+import sys
 
 #
 def dfs(nodes, n, edges, explored, finishTime = None, leaderNodes = None, leader = None):
@@ -37,6 +38,10 @@ def dfs(nodes, n, edges, explored, finishTime = None, leaderNodes = None, leader
 #
 # Main
 #
+
+# Print recursion limit
+sys.setrecursionlimit(100000)
+
 # Set line delimeter
 delim = ' '
 
@@ -102,3 +107,4 @@ for n in reversed(finishTime):
     dfs(nodes, n, edges, explored, None, leaderNodes, n)
 
 json.dump(leaderNodes, open('leaderNodes.json', 'w'))
+
