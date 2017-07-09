@@ -10,7 +10,55 @@
 from collections import defaultdict
 from string import rstrip
 import json
-import sys
+# import sys
+
+#
+def foundChild(edge, parent, explored):
+    child = edge[1] if edge[0] == parent else edge[0]
+    return None if explored[child] else child
+
+#
+def dfsIter(nodes, edges, nodeOrder = [], finishTime = None):
+    # Create empty explored and SCC dictionaries
+    explored = defaultdict(lambda: False)
+    scc = defaultdict(list)
+    
+    # Populate node order from nodes if empty
+    nodeOrder = list(nodes.keys()) if len(nodeOrder) == 0 else nodeOrder
+    
+    for leader in nodeOrder:
+
+        # Continue if explored
+        if explored[leader]: continue
+
+        # Else initialize stack with self and iterate until empty
+        stack = [leader]
+        while len(stack) > 0:
+            
+            print stack
+            
+            # Pop last node from stack and mark explored
+            n = stack.pop()
+            explored[n] = True
+            
+            # Construct list of unexplored child nodes
+            children = []
+            for e in nodes[n]:
+                child = foundChild(edges[e], n, explored)
+                if child is not None: children.append(child)
+            
+            # Return node to stack and extend with children if not empty
+            if len(children) > 0:
+                stack.append(n)
+                stack.extend(children)
+            
+            # Else add node to SCC then append to finishTime if not None
+            else:
+                scc[leader].append(n)
+                if finishTime is not None: finishTime.append(n)
+    
+    # return SCC
+    return scc
 
 #
 def dfs(nodes, n, edges, explored, finishTime = None, leaderNodes = None, leader = None):
@@ -39,8 +87,8 @@ def dfs(nodes, n, edges, explored, finishTime = None, leaderNodes = None, leader
 # Main
 #
 
-# Print recursion limit
-sys.setrecursionlimit(100000)
+# Set recursion limit; REMOVED after still failed
+# sys.setrecursionlimit(100000)
 
 # Set line delimeter
 delim = ' '
@@ -49,10 +97,9 @@ delim = ' '
 nodes = defaultdict(list)
 nodesBak = defaultdict(list)
 edges = []
-edgesBak = []
 
 # Open file and split into lines
-f = open('SCC.txt', 'r')
+f = open('SCC_SMALL.txt', 'r')
 
 # Populate nodes and back pointer dictionaries
 for line in list(f):
@@ -77,34 +124,14 @@ print edges[:10]
 #
 # Reverse DFS to get finish times
 #
-# Create empty explored dictionary and finish time list
-explored = defaultdict(lambda: False)
+# Create empty finish time list and call iterative DFS on reverse node list
 finishTime = []
-
-for n in xrange(len(nodes), 0, -1):
-    
-    # Continue to next unexplored node
-    if explored[n]: continue
-
-    # Run depth-first search updating explored and finish time
-    dfs(nodesBak, n, edges, explored, finishTime)
+dfsIter(nodesBak, edges, range(len(nodes), 0, -1), finishTime)
 
 print finishTime[:10]
 
 #
 # Normal DFS to get strongly connected components
 #
-# Create empty explored and leader dictionaries
-explored = defaultdict(lambda: False)
-leaderNodes = defaultdict(list)
-
-for n in reversed(finishTime):
-    
-    # Continue to next unexplored node
-    if explored[n]: continue
-
-    # Run depth-first search updating explored and finish time
-    dfs(nodes, n, edges, explored, None, leaderNodes, n)
-
-json.dump(leaderNodes, open('leaderNodes.json', 'w'))
-
+scc = dfsIter(nodes, edges, list(reversed(finishTime)))
+json.dump(scc, open('SCC.json', 'w'))
