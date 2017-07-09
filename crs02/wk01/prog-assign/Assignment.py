@@ -28,6 +28,8 @@ def dfsIter(nodes, edges, nodeOrder = [], finishTime = None):
     
     for leader in nodeOrder:
 
+	print leader
+
         # Continue if explored
         if explored[leader]: continue
 
@@ -35,7 +37,7 @@ def dfsIter(nodes, edges, nodeOrder = [], finishTime = None):
         stack = [leader]
         while len(stack) > 0:
             
-            print stack
+            # print stack
             
             # Pop last node from stack and mark explored
             n = stack.pop()
@@ -99,7 +101,7 @@ nodesBak = defaultdict(list)
 edges = []
 
 # Open file and split into lines
-f = open('SCC_SMALL.txt', 'r')
+f = open('SCC.txt', 'r')
 
 # Populate nodes and back pointer dictionaries
 for line in list(f):
