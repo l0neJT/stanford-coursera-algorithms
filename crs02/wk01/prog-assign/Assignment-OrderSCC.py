@@ -9,18 +9,18 @@
 # Imports
 import json
 
-scc = json.load(open('SCC_InstructorTest01.json', 'r'))
-topSCC = [0]
-limitTop = 10
+scc = json.load(open('SCC_StudentTest01.json', 'r'))
+limitTop = 5
+topSCC = [0] * 5
 minLen = 0
 
 for k in scc.keys():
-    thisLen = len(set(scc[k]))
-    if thisLen > minLen:
-        topSCC.append(thisLen)
-        if len(topSCC) > limitTop:
-            topSCC.remove(minLen)
-            minLen = min(topSCC)
+    thisLen = len(scc[k])
+    for i in xrange(0, limitTop):
+        if thisLen >= topSCC[i]:
+            topSCC.insert(i, thisLen)
+            topSCC.pop()
+            break
 
 print topSCC
 
