@@ -27,11 +27,11 @@ def dfsIter(nodes, edges, nodeOrder = [], finishTime = None):
     nodeOrder = list(nodes.keys()) if len(nodeOrder) == 0 else nodeOrder
     
     for leader in nodeOrder:
-
-	print leader
-
+        
         # Continue if explored
         if explored[leader]: continue
+    
+        print leader
 
         # Else initialize stack with self and iterate until empty
         stack = [leader]
@@ -43,16 +43,14 @@ def dfsIter(nodes, edges, nodeOrder = [], finishTime = None):
             n = stack.pop()
             explored[n] = True
             
-            # Construct list of unexplored child nodes
-            children = []
+            # Find first unexplored child node
+            child = None
             for e in nodes[n]:
                 child = foundChild(edges[e], n, explored)
-                if child is not None: children.append(child)
+                if child is not None: break
             
-            # Return node to stack and extend with children if not empty
-            if len(children) > 0:
-                stack.append(n)
-                stack.extend(children)
+            # Extend stack with node and child if not None
+            if child is not None: stack.extend([n, child])
             
             # Else add node to SCC then append to finishTime if not None
             else:
@@ -101,7 +99,7 @@ nodesBak = defaultdict(list)
 edges = []
 
 # Open file and split into lines
-f = open('SCC.txt', 'r')
+f = open('SCC_InstructorTest01.txt', 'r')
 
 # Populate nodes and back pointer dictionaries
 for line in list(f):
@@ -130,10 +128,10 @@ print edges[:10]
 finishTime = []
 dfsIter(nodesBak, edges, range(len(nodes), 0, -1), finishTime)
 
-print finishTime[:10]
+print finishTime[:100]
 
 #
 # Normal DFS to get strongly connected components
 #
 scc = dfsIter(nodes, edges, list(reversed(finishTime)))
-json.dump(scc, open('SCC.json', 'w'))
+json.dump(scc, open('SCC_InstructorTest01.json', 'w'))
