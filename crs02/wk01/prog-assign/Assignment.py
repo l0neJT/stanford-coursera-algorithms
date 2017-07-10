@@ -99,7 +99,7 @@ nodesBak = defaultdict(list)
 edges = []
 
 # Open file and split into lines
-f = open('SCC_InstructorTest01.txt', 'r')
+f = open('SCC.txt', 'r')
 
 # Populate nodes and back pointer dictionaries
 for line in list(f):
@@ -119,7 +119,7 @@ for line in list(f):
 
 # print nodes
 # print nodesBak
-print edges[:10]
+print edges[:100]
 
 #
 # Reverse DFS to get finish times
@@ -134,4 +134,4 @@ print finishTime[:100]
 # Normal DFS to get strongly connected components
 #
 scc = dfsIter(nodes, edges, list(reversed(finishTime)))
-json.dump(scc, open('SCC_InstructorTest01.json', 'w'))
+json.dump(scc, open('SCC.json', 'w'))
