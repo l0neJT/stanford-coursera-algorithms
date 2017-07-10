@@ -94,8 +94,11 @@ def dfs(nodes, n, edges, explored, finishTime = None, leaderNodes = None, leader
 delim = ' '
 
 # Create nodes and back pointer dictionaries with missing constructor set to empty list
+nodeCount = 875714
 nodes = defaultdict(list)
+for i in xrange(nodeCount): nodes[i] = []
 nodesBak = defaultdict(list)
+for i in xrange(nodeCount): nodesBak[i] = []
 edges = []
 
 # Open file and split into lines

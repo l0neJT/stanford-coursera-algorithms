@@ -9,7 +9,7 @@
 # Imports
 import json
 
-scc = json.load(open('SCC_StudentTest01.json', 'r'))
+scc = json.load(open('SCC.json', 'r'))
 limitTop = 5
 topSCC = [0] * 5
 minLen = 0
