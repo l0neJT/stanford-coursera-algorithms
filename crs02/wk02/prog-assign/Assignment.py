@@ -18,7 +18,8 @@ class Graph():
     DefaultWeight = 1
     
     # Shorthand for infinity
-    Inf = float('inf')
+    # Inf = float('inf') # Use for actual implementation
+    Inf = 1000000 # Use for programming assignment
     
     def __init__(self, directed = False, edges = None):
         """Document Graph Class initializer"""
@@ -54,33 +55,43 @@ class Graph():
             # End sift if child's first tuple is greater than or equal to parent
             else: break
     
-    def __siftdown(self, pos):
+    def __siftdown(self, pos, lastPos = None):
         """Document Graph Class siftdown method"""
-        lastPos = len(self._heap) - 1
+        lastPos = lastPos if not None else len(self._heap) - 1
         while pos < lastPos:
             rightChildPos = (pos + 1) << 1
             leftChildPos = rightChildPos - 1
-            
+
             # Stop if no children
             if(leftChildPos > lastPos): break
         
-            # Check right child first if exists
-            elif(rightChildPos <= lastPos):
-                # Compare first tuple value and swap if child greater than parent
-                # NOTE: Continues while loop if swapped
-                if self._heap[pos][0] > self._heap[rightChildPos][0]:
-                    self.__swapNodesInHeap(pos, rightChildPos)
-                    pos = rightChildPos
-                    continue
-                
-            # Check left child
-            # Compare first tuple value and swap if child greater than parent
-            if self._heap[pos][0] > self._heap[leftChildPos][0]:
-                self.__swapNodesInHeap(pos, leftChildPos)
-                pos = leftChildPos
+            # Check left child only if right does not exist
+            elif(rightChildPos > lastPos):
+                if self._heap[pos][0] > self._heap[leftChildPos][0]:
+                    self.__swapNodesInHeap(pos, leftChildPos)
+                    pos = leftChildPos
+                else: break
             
-            # End sift if parent's first tuple value less than both children
-            else: break
+            # Check both children and swap with lesser
+            else:
+                if self._heap[leftChildPos][0] <= self._heap[rightChildPos][0]:
+                    if self._heap[pos][0] > self._heap[leftChildPos][0]:
+                        self.__swapNodesInHeap(pos, leftChildPos)
+                        pos = leftChildPos
+                        continue
+                    elif self._heap[pos][0] > self._heap[rightChildPos][0]:
+                        self.__swapNodesInHeap(pos, rightChildPos)
+                        pos = rightChildPos
+                    else: break
+                else:
+                    if self._heap[pos][0] > self._heap[rightChildPos][0]:
+                        self.__swapNodesInHeap(pos, rightChildPos)
+                        pos = rightChildPos
+                        continue
+                    elif self._heap[pos][0] > self._heap[leftChildPos][0]:
+                        self.__swapNodesInHeap(pos, leftChildPos)
+                        pos = leftChildPos
+                    else: break
         
     def __heappush(self, nodeTuple):
         """Document Graph Class heappush method"""
@@ -89,20 +100,18 @@ class Graph():
         self._nodes[nodeTuple[1]]['heapPosition'] = heapPos
         self.__siftup(heapPos, 0)
     
-    def __heappop(self, pos = 0):
+    def __heappop(self, pos = 0, lastPos = None):
         """Document Graph Class heappop method"""
-        if len(self._heap) == 0: return None
-        elif len(self._heap) == 1: return self._heap.pop()
-        else:
-            nodeTuple = self._heap[pos]
+        nodeTuple = self._heap[pos]
+        lastPos = lastPos if not None else len(self._heap) - 1
             
-            # Move last node into position and sift down
-            self._heap[pos] = self._heap.pop()
-            self._nodes[self._heap[pos][1]]['heapPosition'] = pos
-            self.__siftdown(pos)
-        
-            # Return popped node tuple
-            return nodeTuple
+        # Move last node into position and sift down
+        self._heap[pos] = self._heap.pop(lastPos)
+        self._nodes[self._heap[pos][1]]['heapPosition'] = pos
+        self.__siftdown(pos, lastPos)
+    
+        # Return popped node tuple
+        return nodeTuple
         
     def addEdge(self, tail, head, weight = None):
         """Document Graph Class addEdge method"""
@@ -141,38 +150,39 @@ class Graph():
 
     def minPathLengthsFrom(self, node):
         """Document Graph Class minPathLengthsFrom method"""
-        minPaths = []
-        minNodeTuple = (0, self.__heappop(self._nodes[hash(node)]['heapPosition'])[1])
+        minPaths = defaultdict(lambda: None)
         
-        # While nodes remain in heap
-        while minNodeTuple is not None:
-            # Add to minimum path and new heap
-            minPaths.append(minNodeTuple)
-            
-            # If path length equals infinity, extend minimum paths with remaining
-            # heap and return
-            if minNodeTuple[0] == self.Inf:
-                minPaths.extend(self._heap)
-                break
-            
-            # Remove from heap
-            self._nodes[minNodeTuple[1]]['heapPosition'] = None
+        # Prepare min-heap by swapping starting node to index zero with path
+        # length zero
+        self.__swapNodesInHeap(0, self._nodes[hash(node)]['heapPosition'])
+        self._heap[0] = (0, self._heap[0][1])
         
+        # Loop through nodes
+        for lastPos in xrange(len(self._heap)-1, -1, -1):
+            # Pop minimum node
+            minNode = self.__heappop(0, lastPos)
+            
+            # Add to minimum path
+            minPaths[minNode[1]] = minNode[0]
+            
+            # Set path length to infinity and return to end of heap
+            self.__heappush((self.Inf, minNode[1]))
+            # print 'After pop, before re-calc:', self._heap[:lastPos]
+
             # For nodes in heap reachable from the popped node, set heap sort
             # value to path length from popped node if less than current
-            for i in self._nodes[minNodeTuple[1]]['edgesAtTail']:
+            for i in self._nodes[minNode[1]]['edgesAtTail']:
                 edge = self._edges[i]
+                if minPaths[edge[1]] is not None: continue
+                
                 heapPos = self._nodes[edge[1]]['heapPosition']
-                if heapPos is None: continue
-            
-                newPathLen = minNodeTuple[0] + edge[2]
+                newPathLen = minNode[0] + edge[2]
                 currMinPathLen = self._heap[heapPos][0]
                 if newPathLen < currMinPathLen:
                     self._heap[heapPos] = (newPathLen, edge[1])
                     self.__siftup(heapPos, 0)
             
-            # Get next minimum node tuple
-            minNodeTuple = self.__heappop()
+            # print 'After pop and re-calc:', self._heap[:lastPos]
 
         # Return minimum paths
         return minPaths
@@ -184,7 +194,7 @@ class Graph():
 g = Graph()
 
 # Open file, set delimeters, and set directed-ness
-f = open('Test01.txt', 'r')
+f = open('dijkstraData.txt', 'r')
 edgeDelim = '\t'
 attrDelim = ','
 
@@ -199,4 +209,12 @@ for line in list(f):
         split = e.split(attrDelim)
         g.addEdge(tail, int(split[0]), int(split[1]))
 
-print g.minPathLengthsFrom(1)
+minPathsFrom1 = g.minPathLengthsFrom(1)
+
+# Use for small test sets
+# print minPathsFrom1
+
+# Use for ranom test sets; selects nodes specified by assignment
+keys = [7,37,59,82,99,115,133,165,188,197]
+for k in keys:
+    print k, ':', minPathsFrom1[k]
