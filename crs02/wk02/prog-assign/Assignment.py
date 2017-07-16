@@ -91,7 +91,9 @@ class Graph():
     
     def __heappop(self, pos = 0):
         """Document Graph Class heappop method"""
-        try:
+        if len(self._heap) == 0: return None
+        elif len(self._heap) == 1: return self._heap.pop()
+        else:
             nodeTuple = self._heap[pos]
             
             # Move last node into position and sift down
@@ -101,9 +103,6 @@ class Graph():
         
             # Return popped node tuple
             return nodeTuple
-
-        except:
-            return None
         
     def addEdge(self, tail, head, weight = None):
         """Document Graph Class addEdge method"""
@@ -149,7 +148,6 @@ class Graph():
         while minNodeTuple is not None:
             # Add to minimum path and new heap
             minPaths.append(minNodeTuple)
-            print minPaths
             
             # If path length equals infinity, extend minimum paths with remaining
             # heap and return
