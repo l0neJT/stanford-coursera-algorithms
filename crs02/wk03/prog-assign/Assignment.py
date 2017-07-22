@@ -78,15 +78,48 @@ class MMedian:
         if type(value) != int and type(value) != float:
             raise TypeError('MMedian supports only integers and floats.')
         
-        # Push new value into lower heap
-        heappush(self.lower, -1 * value)
+        #
+        # Insert
+        #
+        # Assume successful insertion, then test new value against minimum upper
+        inserted = True
+        try:
+            if value < self.upper[0]:
+                heappush(self.lower, -1 * value)
+            else:
+                heappush(self.upper, value)
         
-        # If lower heap length more than 1 + upper heap length, re-balance
+        # Inidicate failed insertion if upper empty
+        except IndexError: inserted = False
+    
+        # Try to insert again if failed by testing new value against maximum lower
+        if not inserted:
+            inserted = True
+            try:
+                if value >= -1 * self.lower[0]:
+                    heappush(self.upper, value)
+                else:
+                    heappush(self.lower, -1 * value)
+                    
+            # Inidicate failed insertion if lower also empty
+            except IndexError: inserted = False
+        
+        # Insert into lower if both upper and lower empty
+        if not inserted: heappush(self.lower, -1 * value)
+        
+        #
+        # Balance
+        #
         if len(self.lower) > len(self.upper) + 1:
             maxLower = -1 * heappop(self.lower)
             heappush(self.upper, maxLower)
+        elif len(self.lower) + 1 < len(self.upper):
+            minUpper = heappop(self.upper)
+            heappush(self.lower, -1 * minUpper)
         
+        #
         # Return resulting median
+        #
         return self.getMedian()
 
 #
@@ -95,9 +128,17 @@ class MMedian:
 # Instantiate median maintenance 
 mm = MMedian()
 
-# Open file, set delimeters, and set directed-ness
-f = open('Median_TEST.txt', 'r')
+# Create medians list
+medians = []
 
-# For each line in file, insert into median maintenance
+# Open file, set delimeters, and set directed-ness
+f = open('ForumTest02.txt', 'r')
+
+# For each line in file, insert into median maintenance and append resulting
+# median to medians list
 for l in list(f):
-    print mm.insert(int(l.strip()))
+    medians.append(mm.insert(int(l.strip())))
+
+# Print sum of medians modulo 10000 (per assignment requirement)
+print medians
+print sum(medians) % 10000
