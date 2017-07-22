@@ -1,6 +1,6 @@
 #   Stanford Algorithms Specialization on Coursera
 #   Course 02
-#   Week 01 - Programming Assignment
+#   Week 02 - Programming Assignment
 #
 #   2017-07-16
 #   Logan J Travis
