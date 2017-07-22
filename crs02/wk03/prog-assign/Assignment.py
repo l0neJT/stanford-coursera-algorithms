@@ -132,7 +132,7 @@ mm = MMedian()
 medians = []
 
 # Open file, set delimeters, and set directed-ness
-f = open('ForumTest02.txt', 'r')
+f = open('Median.txt', 'r')
 
 # For each line in file, insert into median maintenance and append resulting
 # median to medians list
@@ -140,5 +140,5 @@ for l in list(f):
     medians.append(mm.insert(int(l.strip())))
 
 # Print sum of medians modulo 10000 (per assignment requirement)
-print medians
+# print medians
 print sum(medians) % 10000
