@@ -1,0 +1,2 @@
+Total range: [3, 10]
+Count totals with unique pairs: 8
