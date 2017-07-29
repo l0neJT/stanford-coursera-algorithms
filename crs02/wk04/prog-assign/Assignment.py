@@ -77,7 +77,7 @@ class TwoSum:
 twoSum = TwoSum()
 
 # Open file
-f = open('ForumTest01.txt', 'r')
+f = open('2sum.txt', 'r')
 
 # For each line in file, insert into median maintenance and append resulting
 # median to medians list
@@ -94,4 +94,4 @@ for t in xrange(minTotal, maxTotal + 1):
 print "Checking totals ranging from", minTotal, "to", maxTotal, "(inclusive)"
 if requireUnique: print "***Total on unique integers ONLY***"
 print "Count totals:", len(foundTotals)
-print "Totals found:", foundTotals
+# print "Totals found:", foundTotals
