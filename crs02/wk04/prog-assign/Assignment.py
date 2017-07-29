@@ -6,6 +6,9 @@
 #   Logan J Travis
 #   loganjtravis@gmail.com
 
+# Import progress bar
+from print_progress import print_progress
+
 class TwoSum:
     """Stores a set of integers and returns the pairs of values that sum to a 
     specified total.
@@ -86,12 +89,13 @@ for l in list(f):
 
 # Create list of total and test for each
 foundTotals = []
-minTotal = -10000
-maxTotal = 10000
+minTotal = -10
+maxTotal = 10
 requireUnique = True
-for t in xrange(minTotal, maxTotal + 1):
-    if twoSum.sumsTo(t, requireUnique): foundTotals.append(t)
 print "Checking totals ranging from", minTotal, "to", maxTotal, "(inclusive)"
 if requireUnique: print "***Total on unique integers ONLY***"
-print "Count totals:", len(foundTotals)
+for t in xrange(minTotal, maxTotal + 1):
+    print_progress(t - minTotal, 1 + maxTotal - minTotal)
+    if twoSum.sumsTo(t, requireUnique): foundTotals.append(t)
+print "\nCount totals:", len(foundTotals)
 # print "Totals found:", foundTotals
