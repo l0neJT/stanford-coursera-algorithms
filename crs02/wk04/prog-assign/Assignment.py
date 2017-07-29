@@ -89,8 +89,8 @@ for l in list(f):
 
 # Create list of total and test for each
 foundTotals = []
-minTotal = -10
-maxTotal = 10
+minTotal = -10000
+maxTotal = 10000
 requireUnique = True
 print "Checking totals ranging from", minTotal, "to", maxTotal, "(inclusive)"
 if requireUnique: print "***Total on unique integers ONLY***"
