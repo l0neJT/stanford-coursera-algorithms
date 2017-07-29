@@ -33,7 +33,7 @@ class TwoSum:
         """
         self._intSet[integer] = True
         self.__intMax = integer if integer > self.__intMax else self.__intMax
-        self.__intMin = integer if integer > self.__intMin else self.__intMin
+        self.__intMin = integer if integer < self.__intMin else self.__intMin
     
     def getMax(self):
         """Return the current maximum integer in the set.
@@ -64,7 +64,7 @@ class TwoSum:
             if requireUnique and diff == x: continue
             try:
                 return self._intSet[diff]
-            except IndexError:
+            except KeyError:
                 continue
         
         # Return false if no pairs found
@@ -84,4 +84,14 @@ f = open('ForumTest01.txt', 'r')
 for l in list(f):
     twoSum.addInteger(int(l.strip()))
 
-print twoSum._intSet
+# Create list of total and test for each
+foundTotals = []
+minTotal = -10
+maxTotal = 10
+requireUnique = True
+for t in xrange(minTotal, maxTotal + 1):
+    if twoSum.sumsTo(t, requireUnique): foundTotals.append(t)
+print "Checking totals ranging from", minTotal, "to", maxTotal, "(inclusive)"
+if requireUnique: print "***Total on unique integers ONLY***"
+print "Count totals:", len(foundTotals)
+print "Totals found:", foundTotals
