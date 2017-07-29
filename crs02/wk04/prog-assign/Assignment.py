@@ -86,8 +86,8 @@ for l in list(f):
 
 # Create list of total and test for each
 foundTotals = []
-minTotal = -10
-maxTotal = 10
+minTotal = -10000
+maxTotal = 10000
 requireUnique = True
 for t in xrange(minTotal, maxTotal + 1):
     if twoSum.sumsTo(t, requireUnique): foundTotals.append(t)
