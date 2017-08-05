@@ -1,6 +1,6 @@
 #   Stanford Algorithms Specialization on Coursera
 #   Course 03
-#   Week 01 - Programming Assignment
+#   Week 01 - Programming Assignment - Part 1: Difference Schedule
 #
 #   2017-08-05
 #   Logan J Travis
@@ -19,7 +19,7 @@ class DifferenceJob (object):
     Specialization offered through Coursera.
     """
     def __init__(self, weight = 1, runtime = 1):
-        """Instantiate a difference job with weight and runtime.Instantiate
+        """Instantiate a difference job with weight and runtime.
         
         Args:
             weight (int): Value for completing the job. Defaults to one (1).
@@ -268,8 +268,18 @@ class DifferenceSchedule (object):
 #
 #   Main
 #
+# Instantiate schedule
 schedule = DifferenceSchedule(ascending = False)
-schedule.addJobList([[1,2], [1,3], [1,4]])
-print schedule
-print "Runtime:", schedule.runtime
+
+# Read jobs from jile
+with open('jobs.txt', 'r') as f:
+    # Skip first line
+    next(f)
+    
+    # Create and add job from each line
+    for l in f:
+        j = l.strip().split(" ")
+        schedule.createAndAddJob(int(j[0]), int(j[1]))
+
+# Calculate weighted runtime
 print "Weighted Runtime:", schedule.weightedRuntime
