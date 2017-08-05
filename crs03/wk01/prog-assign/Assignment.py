@@ -99,7 +99,7 @@ class DifferenceJob (object):
         return "(" + str(self.__weight) + "," +  str(self.__runtime) + ")"
         
     def __repr__(self):
-        """Return a string representation.
+        """Return a string inspection.
         
             Identical to str(self).
         
@@ -119,10 +119,13 @@ class DifferenceSchedule (object):
         __schedule(:obj:`SortedList` of :obj:`DifferenceJob`):
             List of difference jobs sorted in ascending order.
     """
-    def __init__(self, jobList = None):
+    def __init__(self, ascending = True, jobList = None):
         """Instantiate a difference schedule with options job list.
         
         Args:
+            ascending(bool, optional): Sort jobs in ascending order of 
+                difference (weight - runtime) if True, descending order if False.
+        
             jobList(:obj:`list` of :obj:`DifferenceJob` or of :obj:`list`,
                 optional): List of difference jobs or list of lists, sorted or
                 not, to include in the schedule. Each list in a list of list
@@ -130,13 +133,25 @@ class DifferenceSchedule (object):
                 runtime as the second element. Additional elements ignored.
             
         Raises:
-            TypeError: If the optional job list includes an element not of type
-                `DifferenceJob` or `list`.
+            TypeError: If `ascending` not of type `bool` or if the optional job
+                list includes an element not of type `DifferenceJob` or `list`.
             LookupError: If the any element in the optional job is of type
                 `list` with length less than two (2).
         """
         self.__schedule = SortedList()
+        if type(ascending) is bool: self.__ascending = ascending
+        else:
+            raise TypeError("`ascending` must have type `bool`. Found type `" +
+                str(type(ascending)) + "`."
+            )
         if jobList is not None: self.addJobList(jobList)
+    
+    @property
+    def ascending(self):
+        """bool: True if jobs sorted in ascending order by difference (weight -
+            length), False otherwise.
+        """
+        return self.__ascending
     
     @property
     def weightedRuntime(self):
@@ -176,7 +191,8 @@ class DifferenceSchedule (object):
         """
         rt = 0
         wrt = 0
-        for j in self.__schedule:
+        jobs = iter(self.__schedule) if self.ascending else reversed(self.__schedule)
+        for j in jobs:
             rt = rt + j.runtime
             wrt = wrt + rt * j.weight
         return rt, wrt
@@ -236,12 +252,13 @@ class DifferenceSchedule (object):
         """Return a string representation.
         
             Returns:
-                str: A string using the same format as str(SortedList).
+                str: A string listing the difference jobs in sorted order.
         """
-        return str(self.__schedule)
+        jobs = iter(self.__schedule) if self.ascending else reversed(self.__schedule)
+        return "[" + ",".join(map(lambda j: str(j), jobs)) + "]"
     
     def __repr__(self):
-        """Return a string representation.
+        """Return a string inspection.
         
             Returns:
                 str: A string using the same format as repr(SortedList).
@@ -251,7 +268,7 @@ class DifferenceSchedule (object):
 #
 #   Main
 #
-schedule = DifferenceSchedule()
+schedule = DifferenceSchedule(ascending = False)
 schedule.addJobList([[1,2], [1,3], [1,4]])
 print schedule
 print "Runtime:", schedule.runtime
