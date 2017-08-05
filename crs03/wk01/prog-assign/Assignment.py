@@ -11,13 +11,12 @@ from sortedcontainers import SortedList
 from functools import total_ordering
 
 @total_ordering
-class DifferenceJob:
+class DifferenceJob (object):
     """A single job for use in a difference schedule.
     
     Intended only to achieve the outcomes required for the programming
     assignment in week one (1) of course three (3) of the Stanford Algorithms
     Specialization offered through Coursera.
-
     """
     def __init__(self, weight = 1, runtime = 1):
         """Instantiate a difference job with weight and runtime.Instantiate
@@ -26,7 +25,20 @@ class DifferenceJob:
             weight (int): Value for completing the job. Defaults to one (1).
             runtime (int): Time required to complete the job once started.
                 Defaults to one (1).
+        
+        Raises:
+            TypeError: If either `weight` or `runtime` are not type `int`.
         """
+        if type(weight) is not int:
+            raise TypeError(
+                "`weight` must have type `int`. Has type `" +
+                str(type(weight)) + "`."
+            )
+        if type(runtime) is not int:
+            raise TypeError("`runtime` must have type `int`. Has type `" +
+                str(type(runtime)) + "`."
+            )
+
         self.__weight, self.__runtime = weight, runtime
     
     @property
@@ -48,7 +60,7 @@ class DifferenceJob:
         """Return equality comparison between this difference job and another.
         
         Args:
-            other(:obj:DifferenceJob): The comparison difference job.
+            other(:obj:`DifferenceJob`): The comparison difference job.
         
         Returns:
             bool: True if this difference job and the other have equal weight
@@ -58,6 +70,9 @@ class DifferenceJob:
     
     def __lt__(self, other):
         """Return less than comparison between this diference job and another.
+        
+        Used in conjuction with equality comparison and @total_ordering to
+        create all comparison methods.
         
         Args:
             other(:obj:DifferenceJob): The comparison difference job.
@@ -93,15 +108,151 @@ class DifferenceJob:
         """
         return str(self)
 
+class DifferenceSchedule (object):
+    """A sorted list of difference jobs.
+    
+    Intended only to achieve the outcomes required for the programming
+    assignment in week one (1) of course three (3) of the Stanford Algorithms
+    Specialization offered through Coursera.
+    
+    Attributes:
+        __schedule(:obj:`SortedList` of :obj:`DifferenceJob`):
+            List of difference jobs sorted in ascending order.
+    """
+    def __init__(self, jobList = None):
+        """Instantiate a difference schedule with options job list.
+        
+        Args:
+            jobList(:obj:`list` of :obj:`DifferenceJob` or of :obj:`list`,
+                optional): List of difference jobs or list of lists, sorted or
+                not, to include in the schedule. Each list in a list of list
+                must include the job weight as the first element and the job
+                runtime as the second element. Additional elements ignored.
+            
+        Raises:
+            TypeError: If the optional job list includes an element not of type
+                `DifferenceJob` or `list`.
+            LookupError: If the any element in the optional job is of type
+                `list` with length less than two (2).
+        """
+        self.__schedule = SortedList()
+        if jobList is not None: self.addJobList(jobList)
+    
+    @property
+    def weightedRuntime(self):
+        """int: Weighted runtime for all jobs in the schedule. Weighted runtime
+            calculated for each job by multiplying the job's weight by its
+            completion time (i.e., the sum of all preceding job runtimes plus
+            the job's runtime).
+            
+        
+        Calculated upon request in `O(n)` time where `n` is the number of jobs
+        in the schedule.
+        """
+        rt, wrt = self.__calculateRuntimes()
+        return wrt
+    
+    @property
+    def runtime(self):
+        """int: Un-Weighted runtime for all jobs in the schedule.
+            
+        Calculated upon request in `O(n)` time where `n` is the number of jobs
+        in the schedule.
+        """
+        rt, wrt = self.__calculateRuntimes()
+        return rt
+    
+    def __calculateRuntimes(self):
+        """Calculate un-weighted and weighted runtimes.
+        
+        Internal method. Use `runtime` and `weightedRuntime` properties instead.
+        
+        Returns
+            runtime(int): Un-weighted runtime for all jobs in the schedule.
+            weightedRuntime(int): Weighted runtime for all jobs in the schedule.
+                Weighted runtime calculated for each job by multiplying the
+                job's weight by its completion time (i.e., the sum of all
+                preceding job runtimes plus the job's runtime).
+        """
+        rt = 0
+        wrt = 0
+        for j in self.__schedule:
+            rt = rt + j.runtime
+            wrt = wrt + rt * j.weight
+        return rt, wrt
+
+    def addJob(self, job):
+        """Add one difference job to the schedule.
+        
+        Args:
+            job(:obj:`DifferenceJob`): The difference job to add.
+        
+        Raises:
+            TypeError: If the job is not of type `DifferenceJob`.
+        """
+        if type(job) is DifferenceJob: self.__schedule.add(job)
+        else:
+            raise TypeError("`job` must have type `DifferenceJob`. Has type `" +
+                str(type(job)) + "`."
+            )
+    
+    def createAndAddJob(self, weight, runtime):
+        """Add one difference job to the schedule.
+        
+        Args:
+            weight(int): Value for completing the job.
+            runtime(int): Time required to complete the job once started.
+        """
+        job = DifferenceJob(weight, runtime)
+        self.addJob(job)
+
+    def addJobList(self, jobList):
+        """Add multiple difference jobs from a list to the schedule.
+        
+        Args:
+            jobList(:obj:`list` of :obj:`DifferenceJob` or of :obj:`list`,
+                optional): List of difference jobs or list of lists, sorted or
+                not, to include in the schedule. Each list in a list of list
+                must include the job weight as the first element and the job
+                runtime as the second element. Additional elements ignored.
+
+        Raises:
+            TypeError: If the optional job list includes an element not of type
+                `DifferenceJob` or `list`.
+            LookupError: If the any element in the optional job is of type
+                `list` with length less than two (2).
+        """
+        for j in jobList:
+            if type(j) is DifferenceJob: self.addJob(j)
+            elif type(j) is list: self.createAndAddJob(j[0], j[1])
+            else:
+                raise TypeError(
+                    "All elements in the optional job list must have type" +
+                    " `DifferenceJob` or `list`. Found instance of `" +
+                    str(type(j)) + "`."
+                )
+
+    def __str__(self):
+        """Return a string representation.
+        
+            Returns:
+                str: A string using the same format as str(SortedList).
+        """
+        return str(self.__schedule)
+    
+    def __repr__(self):
+        """Return a string representation.
+        
+            Returns:
+                str: A string using the same format as repr(SortedList).
+        """
+        return repr(self.__schedule)
+    
 #
 #   Main
 #
-test = SortedList()
-jobs = [
-    DifferenceJob(1,2),
-    DifferenceJob(1,3),
-    DifferenceJob(1,4),
-    DifferenceJob(2,5)
-]
-test.update(jobs)
-print test
+schedule = DifferenceSchedule()
+schedule.addJobList([[1,2], [1,3], [1,4]])
+print schedule
+print "Runtime:", schedule.runtime
+print "Weighted Runtime:", schedule.weightedRuntime
