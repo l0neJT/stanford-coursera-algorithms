@@ -88,8 +88,9 @@ class kMSTGraph (object):
 
         Returns:
             :obj:`list` of :obj:`list`: List of edges in the MST in the format
-                [tail, head, weight].
-            int: Sum of all minimum edge legths.
+                [tail, head, weight]. Returns a partial list even if no MST
+                possible.
+            int: Sum of all minimum edge legths. None if no MST possible
         """
         mst = []
         mstTot = 0
@@ -101,16 +102,14 @@ class kMSTGraph (object):
         
         # Iterate through edges from smallest to largest adding those that
         # do not create a cycle to the MST
-        for e in self.__edges:
+        iterEdges = iter(self.__edges)
+        while len(mst) < self.nodeCount - 1:
+            try:
+                e = iterEdges.next()
+            except StopIteration:
+                return mst, None
             tailP = self.__nodes[e[0]]["partition"]
             headP = self.__nodes[e[1]]["partition"]
-            
-            # if e[0] == 25 and e[1] == 48:
-            #     print mst
-            #     print partitions
-            #     print tailPartitionIndex
-            #     print headPartitionIndex
-            #     break
             
             # Set tail as partition if neither tail nor head previously seen
             if tailP is None and headP is None:
@@ -152,13 +151,84 @@ class kMSTGraph (object):
             
             # Add edge if any of the above condition is True
             mst.append(e)
-            mstTot = mstTot + e[2]
-                
-            # # Break loop if MST complete
-            # if len(mst) == self.nodeCount - 1: break
+            mstTot += e[2]
         
-        # Return minimum spanning tree and sum of minimum edge weights
+        # Return minimum spanning tree
         return mst, mstTot
+
+    def kClusterSpacing(self, k = 2):
+        """Return the spacing of k-clusters where spacing in the minimum
+            edge weight between any two nodes in difference clusters.
+
+        Args:
+            k (int): Number of clusters.
+
+        Returns:
+            int: Spacing value. None if number of clusters not possible.
+            
+        """
+        mst = []
+        stopEdgeCount = self.nodeCount - k + 1
+        
+        # Set all node partition indices to None
+        for k in self.__nodes.iterkeys():
+            self.__nodes[k]["partition"] = None
+            self.__nodes[k]["rank"] = 0
+        
+        # Iterate through edges from smallest to largest adding those that
+        # do not create a cycle to the MST
+        iterEdges = iter(self.__edges)
+        while len(mst) < stopEdgeCount:
+            try:
+                e = iterEdges.next()
+            except StopIteration:
+                return None
+            tailP = self.__nodes[e[0]]["partition"]
+            headP = self.__nodes[e[1]]["partition"]
+            
+            # Set tail as partition if neither tail nor head previously seen
+            if tailP is None and headP is None:
+                self.__nodes[e[0]]["partition"] = e[0]
+                self.__nodes[e[1]]["partition"] = e[0]
+                self.__nodes[e[0]]["rank"] = 1
+            
+            # Copy tail partition index to head if head not previously seen
+            elif headP is None:
+                self.__nodes[e[1]]["partition"] = self.__getRoot(tailP)
+            
+            # Copy head partition index to tail if tail not previously seen
+            elif tailP is None:
+                self.__nodes[e[0]]["partition"] = self.__getRoot(headP)
+                
+            # Merge partitions if head and tail not in same
+            else:
+                tailRoot = self.__getRoot(tailP)
+                headRoot = self.__getRoot(headP)
+                
+                # Continue to next edge if tail and head in same partition
+                if tailRoot == headRoot: continue
+
+                tailRank = self.__nodes[tailRoot]["rank"]
+                headRank = self.__nodes[headRoot]["rank"]
+            
+                # Merge head into tail if tail has higher rank
+                if tailRank > headRank:
+                    self.__nodes[headRoot]["partition"] = tailRoot
+                    
+                # Merge tail into head if head has higher rank
+                elif tailRank < headRank:
+                    self.__nodes[tailRoot]["partition"] = headRoot
+                
+                # Merge tail into head and increment tail rank otherwise:
+                else:
+                    self.__nodes[tailRoot]["partition"] = headRoot
+                    self.__nodes[headRoot]["rank"] += 1
+            
+            # Add edge if any of the above condition is True
+            mst.append(e)
+        
+        # Return weight of last edge added
+        return mst.pop()[2]
 
 #
 #   Main
@@ -167,7 +237,7 @@ class kMSTGraph (object):
 g = kMSTGraph()
 
 # Read jobs from file
-with open('clustering1-example-50-solution-142.txt', 'r') as f:
+with open('clustering1.txt', 'r') as f:
     # Skip first line
     next(f)
     
@@ -178,6 +248,6 @@ with open('clustering1-example-50-solution-142.txt', 'r') as f:
 
 # Print graph properties
 print "Graph with", g.nodeCount, "nodes and", g.edgeCount, "edges."
-mst, mstTot = g.findMST()
-# print mst
-print len(mst), mstTot
+# mst, mstTot = g.findMST()
+# print len(mst), mstTot
+print g.kClusterSpacing(4)
