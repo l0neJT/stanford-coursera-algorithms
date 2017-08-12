@@ -30,7 +30,7 @@ class kMSTGraph (object):
             edges (:obj:`list` of :obj:`list`, optional): List of edges in
                 format [head, tail, weight]. Weight is optional.
         """
-        self.__nodes = defaultdict(lambda: None)
+        self.__nodes = defaultdict(lambda: {"partition":None, "rank":0})
         self.__edges = SortedListWithKey(key = lambda e: e[2])
         if edges is not None: self.addEdgeList(edges)
 
@@ -43,6 +43,17 @@ class kMSTGraph (object):
     def nodeCount(self):
         """int: Number of nodes in the graph."""
         return len(self.__nodes)
+
+    def __getRoot(self, nodeKey):
+        """Return root partition for given node.
+        
+        Args:
+            nodeKey (:obj:): Target node
+        """
+        parentNode = self.__nodes[nodeKey]["partition"]
+        if parentNode is None: return None
+        if parentNode == nodeKey: return nodeKey
+        return self.__getRoot(parentNode)
 
     def addEdge(self, tail, head, weight = None):
         """Add a single edge to the graph. Creates necessary nodes if missing.
@@ -59,8 +70,8 @@ class kMSTGraph (object):
         self.__edges.add([tail, head, weight])
         
         # Add nodes
-        self.__nodes[head] = None
-        self.__nodes[tail] = None
+        self.__nodes[head]
+        self.__nodes[tail]
     
     def addEdgeList(self, edges):
         """Add multiple edges from a list.
@@ -82,48 +93,69 @@ class kMSTGraph (object):
         """
         mst = []
         mstTot = 0
-        partitions = []
         
         # Set all node partition indices to None
         for k in self.__nodes.iterkeys():
-            self.__nodes[k] = None
+            self.__nodes[k]["partition"] = None
+            self.__nodes[k]["rank"] = 0
         
         # Iterate through edges from smallest to largest adding those that
         # do not create a cycle to the MST
         for e in self.__edges:
-            addEdge = False
-            tailPartitionIndex = self.__nodes[e[0]]
-            headPartitionIndex = self.__nodes[e[1]]
+            tailP = self.__nodes[e[0]]["partition"]
+            headP = self.__nodes[e[0]]["partition"]
             
-            # Add edge to MST and set tail as partition if neither tail nor head
-            # previously seen
-            if tailPartitionIndex is None and headPartitionIndex is None:
-                addEdge = True
-                pIndex = len(partitions)
-                partitions.append(e[0])
-                self.__nodes[e[0]] = pIndex
-                self.__nodes[e[1]] = pIndex
+            # if e[0] == 25 and e[1] == 48:
+            #     print mst
+            #     print partitions
+            #     print tailPartitionIndex
+            #     print headPartitionIndex
+            #     break
             
-            # Add edge to MST and copy tail partition index to head if head not
-            # previously seen
-            elif headPartitionIndex is None:
-                addEdge = True
-                self.__nodes[e[1]] = tailPartitionIndex
+            # Set tail as partition if neither tail nor head previously seen
+            if tailP is None and headP is None:
+                self.__nodes[e[0]]["partition"] = e[0]
+                self.__nodes[e[1]]["partition"] = e[0]
+                self.__nodes[e[0]]["rank"] = 1
             
-            # Add edge to MST and copy head partition index to tail if tail not
-            # previously seen
-            elif tailPartitionIndex is None:
-                addEdge = True
-                self.__nodes[e[0]] = headPartitionIndex
+            # Copy tail partition index to head if head not previously seen
+            elif headP is None:
+                self.__nodes[e[1]]["partition"] = self.__getRoot(tailP)
+            
+            # Copy head partition index to tail if tail not previously seen
+            elif tailP is None:
+                self.__nodes[e[0]]["partition"] = self.__getRoot(headP)
                 
-            # Add edge to MST and merge head partition into tail if not cycle
-            elif partitions[headPartitionIndex] != partitions[tailPartitionIndex]:
-                addEdge = True
-                partitions[headPartitionIndex] = partitions[tailPartitionIndex]
+            # Merge partitions if head and tail not in same
+            else:
+                tailRoot = self.__getRoot(tailP)
+                headRoot = self.__getRoot(headP)
+                
+                # Continue to next edge if tail and head in same partition
+                if tailRoot == headRoot: continue
+
+                tailRank = self.__nodes[tailRoot]["rank"]
+                headRank = self.__nodes[headRoot]["rank"]
             
-            if addEdge:
-                mst.append(e)
-                mstTot = mstTot + e[2]
+                # Merge head into tail if tail has higher rank
+                if tailRank > headRank:
+                    self.__nodes[headRoot]["partition"] = tailRoot
+                    
+                # Merge tail into head if head has higher rank
+                elif tailRank < headRank:
+                    self.__nodes[tailRoot]["partition"] = headRoot
+                
+                # Merge tail into head and increment tail rank otherwise:
+                else:
+                    self.__nodes[tailRoot]["partition"] = headRoot
+                    self.__nodes[headRoot]["rank"] += 1
+            
+            # Add edge if any of the above condition is True
+            mst.append(e)
+            mstTot = mstTot + e[2]
+                
+            # # Break loop if MST complete
+            # if len(mst) == self.nodeCount - 1: break
         
         # Return minimum spanning tree and sum of minimum edge weights
         return mst, mstTot
@@ -135,7 +167,7 @@ class kMSTGraph (object):
 g = kMSTGraph()
 
 # Read jobs from file
-with open('clustering1.txt', 'r') as f:
+with open('clustering1-example-50-solution-142.txt', 'r') as f:
     # Skip first line
     next(f)
     
@@ -148,5 +180,6 @@ with open('clustering1.txt', 'r') as f:
 print "Graph with", g.nodeCount, "nodes and", g.edgeCount, "edges."
 mst, mstTot = g.findMST()
 # print mst
-print len(mst)
-print mstTot
+print mst[:49]
+print mst[49:]
+print len(mst), mstTot
