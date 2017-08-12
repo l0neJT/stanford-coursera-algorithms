@@ -103,7 +103,7 @@ class kMSTGraph (object):
         # do not create a cycle to the MST
         for e in self.__edges:
             tailP = self.__nodes[e[0]]["partition"]
-            headP = self.__nodes[e[0]]["partition"]
+            headP = self.__nodes[e[1]]["partition"]
             
             # if e[0] == 25 and e[1] == 48:
             #     print mst
@@ -180,6 +180,4 @@ with open('clustering1-example-50-solution-142.txt', 'r') as f:
 print "Graph with", g.nodeCount, "nodes and", g.edgeCount, "edges."
 mst, mstTot = g.findMST()
 # print mst
-print mst[:49]
-print mst[49:]
 print len(mst), mstTot
