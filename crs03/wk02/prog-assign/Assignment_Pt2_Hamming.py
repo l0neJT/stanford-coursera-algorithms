@@ -9,6 +9,7 @@
 # Imports
 from collections import defaultdict
 from itertools import combinations
+from sortedcontainers import SortedListWithKey
 from array import array
 
 class HamGraph (object):
@@ -38,7 +39,7 @@ class HamGraph (object):
         """int: The number of nodes in the graph."""
         return len(self.__nodes)
 
-    def __generateMasks(self, maxDistance):
+    def generateMasks(self, maxDistance):
         """Return bit masks for XOR with a node identifier to create a list of
             other nodes to search.
             
@@ -51,7 +52,9 @@ class HamGraph (object):
         masks = [0]
         for d in xrange(1, maxDistance + 1):
             for c in combinations(range(self.bitLength), d):
-                masks.append(reduce(lambda acc, v: acc + pow(2, v), c))
+                acc = 0
+                for i in c: acc += pow(2, i)
+                masks.append(acc)
         return set(masks)
 
     def __getRoot(self, nodeKey):
@@ -90,6 +93,21 @@ class HamGraph (object):
         """
         for n in nodes:
             self.addNode(n)
+    
+    def neiborDistances(self, node):
+        """Return distances to neighbor nodes (including self).
+        
+        Args:
+            node (int): The node identifier from which to calculate distances.
+            
+        Returns:
+            :obj:`SortedListWithKey` of :obj:`list` of int: List of [neighbor,
+                distance] lists sorted in ascending order.
+        """
+        neighborDist = SortedListWithKey(key = lambda n: n[1])
+        for n in self.__nodes.iterkeys():
+            neighborDist.add([n, bin(node ^ n).count("1")])
+        return neighborDist
 
     def kClustersAtSpacing(self, spacing = 2):
         """Return clusters meeting the spacing requirement where spacing in the
@@ -103,7 +121,7 @@ class HamGraph (object):
             
         """
         clusters = defaultdict(list)
-        masks = self.__generateMasks(spacing - 1)
+        masks = self.generateMasks(spacing - 1)
         
         # Set all node partition indices to None
         for k in self.__nodes.iterkeys():
@@ -117,20 +135,19 @@ class HamGraph (object):
                 nP = self.__nodes[nKey]["partition"]
                 neighborKey = nKey ^ m
                 
-                # Continue if neighbor is self
-                if nKey == neighborKey: continue
-                
                 # Get neighbor parition; continue on key error.
                 try:
-                    neighborP = self.__nodes[neighborKey]["parition"]
+                    neighborP = self.__nodes[neighborKey]["partition"]
                 except KeyError: continue
 
                 # Set this node as partition if neither this node nor neighbor
                 # previously seen
                 if nP is None and neighborP is None:
-                    self.__nodes[nKey]["partition"] = nP
-                    self.__nodes[neighborKey]["parition"] = nP
-                    self.__nodes[nKey]["rank"] = 1
+                    self.__nodes[nKey]["partition"] = nKey
+                    self.__nodes[neighborKey]["partition"] = nKey
+                    
+                    # Only update rank if neighbor is not this node
+                    if nKey != neighborKey: self.__nodes[nKey]["rank"] = 1
                 
                 # Copy this node partition to neighbor if neighbor not
                 # previously seen
@@ -168,19 +185,19 @@ class HamGraph (object):
                         self.__nodes[nRoot]["partition"] = neighborRoot
                         self.__nodes[neighborRoot]["rank"] += 1
 
-            # Return dictionary of clusters
-            for k in self.__nodes.iterkeys():
-                clusters[self.__getRoot(k)].append(k)
-            return clusters
+        # Return dictionary of clusters
+        for k in self.__nodes.iterkeys():
+            clusters[self.__getRoot(k)].append(k)
+        return clusters
 
 #
 #   Main
 #
 # Instantiate Hamming cluster graph
-g = HamGraph(12)
+g = HamGraph(24)
 
 # Read jobs from file
-with open('clustering2-example-200-12-solution-4.txt', 'r') as f:
+with open('clustering_big.txt', 'r') as f:
     # Skip first line
     next(f)
     
@@ -196,4 +213,6 @@ with open('clustering2-example-200-12-solution-4.txt', 'r') as f:
 print "Graph with", g.nodeCount, "nodes and", g.bitLength, "bit length."
 
 # Print clusters with spacing 3
-print g.kClustersAtSpacing(3)
+clusters = g.kClustersAtSpacing(3)
+# print clusters
+print len(clusters)
