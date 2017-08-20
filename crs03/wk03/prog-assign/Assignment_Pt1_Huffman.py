@@ -17,26 +17,41 @@ class huffCode:
     def __init__(self, symbols = None):
         """Initialize encoder.
         
-            Args:
-                symbols(`obj`list of `obj`list of [`obj`, int], optional): List
-                    of objects to encode each with an integer for determining
-                    relative occurrence.
+        Args:
+            symbols(`obj`list of `obj`list of [`obj`, int], optional): List of
+                objects to encode each with an integer for determining relative
+                occurrence.
         """
         self.__symbols = {}
+        """:obj:`dict`, private: Dictionary of symbols (keys) and occurences
+            (values).
+        """
+        
         self.__encodingTree = []
+        """:obj:`list`, private: List of tuples used for encoding/decoding. Each
+            tuple has four items with occurences as 0, object at 1, left child
+            position at 2, and right child position at 3. All but occurences may
+            include None.
+        """
+            
         self.__encoded = False
+        """bool, private: Indicator whether all symbols encoded. See isEncoded
+            for public property.
+        """
+        
+        # Add symbols if provided
         if symbols is not None: self.addSymbols(symbols)
 
     @property
     def symbolCount(self):
-        """Number of symbols.
+        """int: Number of symbols.
         
         """
         return len(self.__symbols)
     
     @property
     def isEncoded(self):
-        """Indicates whether all symbols encoded.
+        """bool: Indicator whether all symbols encoded.
         
         """
         return self.__encoded
@@ -44,9 +59,9 @@ class huffCode:
     def addSymbol(self, symbol, occurs):
         """Add a single symbol.
         
-            Args:
-                symbol(`obj`): Any object. Duplicate objects ignored.
-                occurs(int): An integer for determining releative occurrence.
+        Args:
+            symbol(`obj`): Any object. Duplicate objects ignored.
+            occurs(int): An integer for determining releative occurrence.
         """
         if symbol not in self.__symbols:
             self.__symbols[symbol] = occurs
@@ -55,20 +70,19 @@ class huffCode:
     def addSymbols(self, symbols):
         """Add multiple symbols from a list.
         
-            Args:
-                symbols(`obj`list of `obj`list of [`obj`, int], optional): List
-                    of objects to encode each with an integer for determining
-                    relative occurrence.
+        Args:
+            symbols(`obj`list of `obj`list of [`obj`, int], optional): List of
+                objects to encode each with an integer for determining
+                relative occurrence.
         """
         for s in symbols: self.addSymbol(s[0], s[1])
     
     def __encode(self, node, code = ""):
         """Return encoding for all symbols by recursing through encoding tree.
         
-            Args:
-                node(tuple): Current node in the encoding tree.
-                code(str, optional): Code for current node. Defaults to empty
-                    string.
+        Args:
+            node(tuple): Current node in the encoding tree.
+            code(str, optional): Code for current node. Defaults to empty string.
         """
         encoded = {} if node[1] is None else {node[1]:code}
         if node[2] is not None:
@@ -80,8 +94,8 @@ class huffCode:
     def encodeHuffman(self):
         """Return the Huffman encoding for all symbols.
         
-            Returns:
-                `obj`dict
+        Returns:
+            `obj`dict: Dictionary of symbols (keys) and encoded values.
         """
         # Encode symbols if not previously encoded
         if not(self.isEncoded):
