@@ -25,7 +25,7 @@ class mwis:
         """
         
         # Add nodes if provided
-        if nodes is not None: return
+        if nodes is not None: self.extendNodes(nodes)
     
     @property
     def nodeCount(self):
@@ -63,15 +63,15 @@ class mwis:
                 node value).
         """
         # Initialize tentative inclusion and final results list
-        incl = [(self.__nodes[0], True)]
+        incl = []
         rslt = []
         
         # Iterate through each node adding that node if its value plus the
         # cumulative value of decisions for node at index - 2 is greater than
         # the cumulative decisions for node value at index - 1.
-        for i in xrange(1, self.nodeCount):
-            n_2 = self.__nodes[i - 2] if i > 1 else 0
-            n_1 = self.__nodes[i - 1]
+        for i in xrange(0, self.nodeCount):
+            n_2 = incl[i - 2][0] if i > 1 else 0
+            n_1 = incl[i - 1][0] if i > 0 else 0
             n = self.__nodes[i]
             incl.append((n + n_2, True) if n + n_2 > n_1 else (n_1, False))
         
@@ -97,7 +97,7 @@ class mwis:
 mwis = mwis()
 
 # Read jobs from file
-with open('mwis-test10-max2616.txt', 'r') as f:
+with open('mwis.txt', 'r') as f:
     # Skip first line
     next(f)
     
@@ -112,9 +112,11 @@ mwisNodes = mwis.getMaxWeightIndependentSet()
 # Print one-indexed list of nodes in the maximum weight independent set along
 # with the sum of their values.
 print "Maxium weight: %d" % sum(map(lambda n: n[1], mwisNodes))
-tgtNodes = [1, 2, 3, 4, 17, 117, 517, 997]
 oneIndexed = map(lambda n: (n[0] + 1, n[1]), mwisNodes)
-print oneIndexed
-# print "Filtered Nodes for Assignment: %s" % str(\
-#     filter(lambda n: n[0] in tgtNodes, oneIndexed)\
-# )
+# print oneIndexed
+
+# Print only target nodes for assignment
+tgtNodes = [1, 2, 3, 4, 17, 117, 517, 997]
+print "Filtered Nodes for Assignment: %s" % str(\
+    filter(lambda n: n[0] in tgtNodes, oneIndexed)\
+)
