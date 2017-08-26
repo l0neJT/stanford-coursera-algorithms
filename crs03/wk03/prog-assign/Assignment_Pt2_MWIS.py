@@ -78,6 +78,7 @@ class mwis:
         # Reverse through inclusion list (right to left on the path graph) 
         # to reconstruct the set with the maximum weight.
         i = self.nodeCount - 1
+
         while i >= 0:
             # If node included, append position to result and move to index - 2.
             # Else, check node at index - 1.
