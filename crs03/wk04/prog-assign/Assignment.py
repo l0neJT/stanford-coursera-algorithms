@@ -87,13 +87,25 @@ class item:
         return self.value * other.cost < other.value * self.cost or \
 self.value * other.cost < other.value * self.cost and self.value < other.value
     
-    def __copy__(self):
-        """Return a new item with equal cost and value.
+    # def __copy__(self):
+    #     """Return a new item with equal cost and value.
+        
+    #     Returns:
+    #         `obj`item: The new item.
+    #     """
+    #     return type(self)(self.cost, self.value)
+    
+    def __str__(self):
+        """Print item in condensed tuple format (cost, value).
         
         Returns:
-            `obj`item: The new item.
+            str: Condensed tuple format (cost, value).
         """
-        return type(self)(self.cost, self.value)
+        return "(%d, %d)" % (self.cost, self.value)
+    
+    def __repr__(self):
+        """Represent item as string. Same as __str__()."""
+        return str(self)
 
 class knapsack:
     """A container for efficiently packing items.
@@ -141,11 +153,6 @@ class knapsack:
         """bool: Indicator if knapsack currently packed."""
         return self.__packed
     
-    @property
-    def packedItems(self):
-        """`obj`list: of `obj`item: Items currently packed into the knapsack."""
-        return deepcopy(self.__packedItems) if self.packed else []
-    
     def addItemsToPackingList(self, items):
         """Add multiple items to the packing list.
         
@@ -175,36 +182,40 @@ class knapsack:
         """Pack items to maximize value within the knapsack capacity.
         
         Returns:
-            obj`list: of `obj`item: Items packed into the knapsack.
+            int: Value of packed items.
         """
         if not self.packed:
-            # Initialize high and low partitions
-            cost = 0
-            value = 0
-            self.__packedItems = []
+            # Initialize tracking arrays
+            last = [0] * (self.capacity + 1)
+            curr = [0] * (self.capacity + 1)
             
-            # Iterate from highest value:cost item to lowest
-            for i in sorted(self.__packingList, reverse = True):
-                if cost + i.cost <= self.capacity:
-                    cost += i.cost
-                    value += i.value
-                    self.__packedItems.append(i)
-                elif value < i.value or value == i.value and cost > i.cost:
-                    cost = i.cost
-                    value = i.value
-                    items = [i]
+            # Iterate through items then by tracking array
+            for i in self.__packingList:
+                print i
+                for j in xrange(0, self.capacity + 1):
+                    # Copy last value for given capacity if exceded by cost
+                    if j < i.cost:
+                        curr[j] = last[j]
+                        continue
+                    
+                    # Otherwise take maximum of last value for given capacity
+                    # versus item value plus last value for capacity minus cost
+                    curr[j] = max(last[j], last[j - i.cost] + i.value)
+                
+                # Copy current to last
+                last = copy(curr)
             
             # Indicate knapsack packed
             self.__packed = True
 
-        # Return list of packed items
-        return self.packedItems
+        # Return packed value
+        return curr[self.capacity]
 
 #
 #   Main
 #
 # Open file
-f = open("knapsack1.txt")
+f = open("knapsack_big.txt")
 
 # Read first list to get capacity and initialize knapsack
 l = next(f)
@@ -221,9 +232,5 @@ print "%s knapsack with %d capacity and %d items on the packing list." % \
     sack.countPackingListItems)
     
 # Pack items
-packedItems = sack.pack()
-
-# Print information about packed items
-print "Packed %d items with value %d and cost %d." % (len(packedItems), \
-    reduce(lambda a, b: a + b, map(lambda i: i.value, packedItems)), \
-    reduce(lambda a, b: a + b, map(lambda i: i.cost, packedItems)))
+packedValue = sack.pack()
+print "Packed value of %d." % packedValue
