@@ -23,47 +23,46 @@ class item:
             cost (int): The item cost.
             value (int): The value of the item.
         """
-        if type(cost) is not int:
-            raise TypeError("The item cost must be an integer. Has type &s." %\
-                str(type(cost)))
-        if type(value) is not int:
-            raise TypeError("Parameter value must be an integer. Has type &s." %\
-                str(type(value)))
+        # Initialize properties
+        self.__cost = None
+        self.__value = None
+        
+        # Set properties using setters for consitency
         self.cost = cost
         self.value = value
     
-    # @property
-    # def cost(self):
-    #     """int: The item cost."""
-    #     return self.__cost
+    @property
+    def cost(self):
+        """int: The item cost."""
+        return self.__cost
     
-    # @cost.setter
-    # def cost(self, cost):
-    #     """Set the item cost.
+    @cost.setter
+    def cost(self, cost):
+        """Set the item cost.
         
-    #     Args:
-    #         cost (int): The item cost.
-    #     """
-    #     if type(cost) is not int:
-    #         raise TypeError("The item cost must be an integer. Has type &s." %\
-    #             str(type(cost)))
-    #     self.__cost = cost
+        Args:
+            cost (int): The item cost.
+        """
+        if type(cost) is not int:
+            raise TypeError("The item cost must be an integer. Has type &s." %\
+                str(type(cost)))
+        self.__cost = cost
     
-    # @property
-    # def value(self):
-    #     """int: The value of the item."""
+    @property
+    def value(self):
+        """int: The value of the item."""
     
-    # @value.setter
-    # def value(self, value):
-    #     """Set the value of the item.
+    @value.setter
+    def value(self, value):
+        """Set the value of the item.
         
-    #     Args:
-    #         value (int): The value of the item.
-    #     """
-    #     if type(value) is not int:
-    #         raise TypeError("Parameter value must be an integer. Has type &s." %\
-    #             str(type(value)))
-    #     self.__value = value
+        Args:
+            value (int): The value of the item.
+        """
+        if type(value) is not int:
+            raise TypeError("Parameter value must be an integer. Has type &s." %\
+                str(type(value)))
+        self.__value = value
     
     def __eq__(self, other):
         """Compare this and another item for equality.
@@ -86,14 +85,6 @@ class item:
         """
         return self.value * other.cost < other.value * self.cost or \
 self.value * other.cost < other.value * self.cost and self.value < other.value
-    
-    # def __copy__(self):
-    #     """Return a new item with equal cost and value.
-        
-    #     Returns:
-    #         `obj`item: The new item.
-    #     """
-    #     return type(self)(self.cost, self.value)
     
     def __str__(self):
         """Print item in condensed tuple format (cost, value).
@@ -191,7 +182,6 @@ class knapsack:
             
             # Iterate through items then by tracking array
             for i in self.__packingList:
-                print i
                 for j in xrange(0, self.capacity + 1):
                     # Copy last value for given capacity if exceded by cost
                     if j < i.cost:
@@ -215,7 +205,7 @@ class knapsack:
 #   Main
 #
 # Open file
-f = open("knapsack_big.txt")
+f = open("knapsack1.txt")
 
 # Read first list to get capacity and initialize knapsack
 l = next(f)
