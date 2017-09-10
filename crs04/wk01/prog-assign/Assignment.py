@@ -8,6 +8,7 @@
 
 # Imports
 from collections import defaultdict
+from heapq import heappush, heapify
 
 class Graph:
     """Basic graph class with minimum path methods.
@@ -70,11 +71,39 @@ class Graph:
         for e in edges:
             self.addEdge(e[0], e[1], e[2] if len(e) > 2 else None)
     
-    def shortestPathBellmanFord(self, node, returnEdges = False):
-        """Return the shortest path from a single node to all other nodes
+    @staticmethod
+    def __reconstructPath(nodes, returnEdges):
+        """Reconstruct paths for shortest path algorithm results."""
+        # Create return dictionary
+        ret = dict(map(lambda k: (k, {"length":nodes[k][0]}), nodes.keys()))
+        
+        # Reconstruct full paths if required
+        if returnEdges:
+            # Iterate through return dictionary
+            for k in ret.keys():
+                # Set path to None and continue if node has not parent
+                if nodes[k][1] is None:
+                    ret[k]["path"] = None
+                    continue
+                
+                # Initialize path with node at tail
+                ret[k]["path"] = [k]
+                
+                # Insert parent at head of path until no parent found
+                parent = nodes[k][1]
+                while parent is not None and parent != ret[k]["path"][0]:
+                    ret[k]["path"].insert(0, parent)
+                    parent = nodes[parent][1]
+        
+        # Return
+        return ret
+    
+    def spBellmanFord(self, node, returnEdges = False):
+        """Return the shortest path from a single node to all other nodes using
+            then Bellman-Ford algorithm.
         
         Args:
-            nodes(:hashable:): Starting node.
+            node(:hashable:): Starting node.
             returnEdges(boolean, optional): Indicator to return a list of edges.
                 Defaults to False (returns path length).
         
@@ -119,29 +148,154 @@ class Graph:
             tail, head, weight = self.__edges[e]
             if curr[tail][0] + weight < curr[head][0]: return None
         
-        # Create return dictionary
-        ret = dict(map(lambda k: (k, {"length":curr[k][0]}), curr.keys()))
+        # Return shortest paths
+        return Graph.__reconstructPath(curr, returnEdges)
+    
+    @staticmethod
+    def __swapHeapNodes(heap, nodes, i, j):
+        """Swap heap nodes."""
+        iNode, jNode = heap[i][1], heap[j][1]
+        heap[i], heap[j] = heap[j], heap[i]
+        nodes[iNode], nodes[jNode] = j, i
+    
+    @staticmethod
+    def __siftup(heap, nodes, pos, stopPos = None):
+        """Sifts node up heap from starting position up to stopping position.
+            Helper for Dijkstra shortest path algorithm.
         
-        # Reconstruct full paths if required
-        if returnEdges:
-            # Iterate through return dictionary
-            for k in ret.keys():
-                # Set path to None and continue if node has not parent
-                if curr[k][1] is None:
-                    ret[k]["path"] = None
-                    continue
-                
-                # Initialize path with node at tail
-                ret[k]["path"] = [k]
-                
-                # Insert parent at head of path until no parent found
-                parent = curr[k][1]
-                while parent is not None and parent != ret[k]["path"][0]:
-                    ret[k]["path"].insert(0, parent)
-                    parent = curr[parent][1]
+        """
+        # Default stopping position zero
+        stopPos = stopPos if not None else 0
+
+        # Loop until past stopping position
+        while pos > stopPos:
+            # Set parent position
+            parentPos = (pos - 1) >> 1
+
+            # Swap if child less than parent
+            if heap[pos][0] < heap[parentPos][0]:
+                Graph.__swapHeapNodes(heap, nodes, pos, parentPos)
+                pos = parentPos
+            
+            # End sift if child's first tuple is greater than or equal to parent
+            else: break
+    
+    @staticmethod
+    def __siftdown(heap, nodes, pos, stopPos = None):
+        """Sifts down heap from starting position down to stopping position.
+            Helper for Dijkstra shortest path algorithm.
         
-        # Return
-        return ret
+        """
+        # Default stopping position to end of heap
+        stopPos = stopPos if not None else len(heap) - 1
+        
+        # Loop until past stopping position
+        while pos < stopPos:
+            # Set right and left child positions
+            rChildPos = (pos + 1) << 1
+            lChildPos = rChildPos - 1
+            
+            # Break if children passt stopping position
+            if(lChildPos > stopPos): break
+        
+            # Check left child only if right past stopping position
+            if(rChildPos > stopPos):
+                # Swap if left child less than parent
+                if heap[pos][0] > heap[lChildPos][0]:
+                    Graph.__swapHeapNodes(heap, nodes, pos, lChildPos)
+                    pos = lChildPos
+                
+                # End sift if left child greater than or equal to parent
+                else: break
+        
+            # Determine minimum of parent, left child, and right child otherwise
+            else:
+                # Use heap (why not?) to order parent, left child, and right
+                # child then extract position
+                minPos = heapify([\
+                    (heap[pos][0], pos), \
+                    (heap[lChildPos][0], lChildPos), \
+                    (heap[rChildPos][0], rChildPos)])[0][1]
+                
+                # End sift if parent has minimum value
+                if minPos == pos: break
+            
+                # Swap otherwise
+                Graph.__swapHeapNodes(heap, nodes, pos, minPos)
+                pos = minPos
+    
+    @staticmethod
+    def __heappush(heap, nodes, node):
+        """Push a node onto the heap."""
+        pos = len(heap)
+        heap.append(node)
+        nodes[node[1]] = pos
+        Graph.__siftup(heap, nodes, pos)
+    
+    @staticmethod
+    def __heappop(heap, nodes, pos, stopPos = None):
+        """Pop a node from the heap."""
+        # Default stopping position to end of heap
+        stopPos = stopPos if not None else len(heap) - 1
+        
+        # Swap target node with stopping position, re-order heap to stopping
+        # position minus one, then pop the target node
+        Graph.__swapHeapNodes(heap, nodes, pos, stopPos)
+        Graph.__siftdown(heap, nodes, pos, stopPos - 1)
+        node = heap.pop(stopPos)
+    
+        # Delete node from dictionary and return
+        del nodes[node[1]]
+        return node
+
+    def spDijkstra(self, node, returnEdges = False):
+        """Return the shortest path from a single node to all other nodes using
+            Dijkstra's algorithm.
+        
+        Args:
+            node(:hashable:): Starting node.
+            returnEdges(boolean, optional): Indicator to return a list of edges.
+                Defaults to False (returns path length).
+        
+        Returns:
+            :obj:`dict`: All nodes with their shortest path length from starting
+                node and [optional] full paths as an ordered list of nodes.
+        """
+        # Initialize heap, not found nodes, and found nodes
+        heap = map(lambda k: (\
+            0 if k == node else self.Inf,\
+            k,\
+            k if k == node else None), self.__nodes.keys())
+        nodes = dict(map(lambda (i, n): (n[1], i), enumerate(heap)))
+        found = defaultdict(lambda: None)
+        
+        # Swap target node to beginning of heap
+        Graph.__swapHeapNodes(heap, nodes, 0, nodes[node])
+        
+        # Iterate through nodes
+        for stopPos in xrange(len(heap) - 1, -1 , -1):
+            # Pop minimum node
+            n = Graph.__heappop(heap, nodes, 0, stopPos)
+            
+            # Add to found nodes
+            found[n[1]] = (n[0], n[2])
+        
+            # Update path length for nodes reachable from minimum node
+            for e in self.__nodes[n[1]]['tails']:
+                # Get edge components
+                tail, head, weight = self.__edges[e]
+                
+                # Continue if head node already found
+                if found[head] is not None: continue
+            
+                # Calculate new path length and update if less than current
+                newLen = n[0] + weight
+                if newLen < heap[nodes[head]][0]:
+                    heap[nodes[head]] = (newLen, head, tail)
+                    Graph.__siftup(heap, nodes, nodes[head])
+        
+        # Return shortest paths
+        return Graph.__reconstructPath(found, returnEdges)   
         
 #
 # Main
@@ -161,5 +315,5 @@ with open('g3.txt', 'r') as f:
 
 # Print graph summary
 print "Graph with %d nodes and %d edges." % (g.nodeCount, g.edgeCount)
-sp1 = g.shortestPathBellmanFord(1)
+sp1 = g.spBellmanFord(1)
 print sp1
