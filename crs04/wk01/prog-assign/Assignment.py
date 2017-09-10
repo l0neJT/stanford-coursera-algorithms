@@ -159,14 +159,11 @@ class Graph:
         nodes[iNode], nodes[jNode] = j, i
     
     @staticmethod
-    def __siftup(heap, nodes, pos, stopPos = None):
+    def __siftup(heap, nodes, pos, stopPos):
         """Sifts node up heap from starting position up to stopping position.
             Helper for Dijkstra shortest path algorithm.
         
         """
-        # Default stopping position zero
-        stopPos = stopPos if not None else 0
-
         # Loop until past stopping position
         while pos > stopPos:
             # Set parent position
@@ -294,7 +291,7 @@ class Graph:
                 newLen = n[0] + weight
                 if newLen < heap[nodes[head]][0]:
                     heap[nodes[head]] = (newLen, head, tail)
-                    Graph.__siftup(heap, nodes, nodes[head])
+                    Graph.__siftup(heap, nodes, nodes[head], 0)
         
         # Return shortest paths
         return Graph.__reconstructPath(found, returnEdges)   
@@ -317,5 +314,6 @@ with open('g_test_dijkstra.txt', 'r') as f:
 
 # Print graph summary
 print "Graph with %d nodes and %d edges." % (g.nodeCount, g.edgeCount)
-sp1 = g.spBellmanFord(1)
-print sp1
+i = 4
+print g.spDijkstra(i, True)
+print g.spBellmanFord(i, True)
