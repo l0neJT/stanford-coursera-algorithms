@@ -212,17 +212,19 @@ class Graph:
             else:
                 # Use heap (why not?) to order parent, left child, and right
                 # child then extract position
-                minPos = heapify([\
-                    (heap[pos][0], pos), \
-                    (heap[lChildPos][0], lChildPos), \
-                    (heap[rChildPos][0], rChildPos)])[0][1]
+                minHeap = [
+                        (heap[pos][0], pos),
+                        (heap[lChildPos][0], lChildPos),
+                        (heap[rChildPos][0], rChildPos)
+                    ]
+                heapify(minHeap)
                 
                 # End sift if parent has minimum value
-                if minPos == pos: break
+                if minHeap[0][1] == pos: break
             
                 # Swap otherwise
-                Graph.__swapHeapNodes(heap, nodes, pos, minPos)
-                pos = minPos
+                Graph.__swapHeapNodes(heap, nodes, pos, minHeap[0][1])
+                pos = minHeap[0][1]
     
     @staticmethod
     def __heappush(heap, nodes, node):
@@ -304,7 +306,7 @@ class Graph:
 g = Graph()
 
 # Read edges from file
-with open('g3.txt', 'r') as f:
+with open('g_test_dijkstra.txt', 'r') as f:
     # Skip first line
     next(f)
     
