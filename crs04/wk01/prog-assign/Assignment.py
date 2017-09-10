@@ -9,6 +9,8 @@
 # Imports
 from collections import defaultdict
 from heapq import heappush, heapify
+from string import ascii_lowercase
+import random
 
 class Graph:
     """Basic graph class with minimum path methods.
@@ -28,18 +30,36 @@ class Graph:
             edges(:obj:`list` of :obj:`list`, optional): List of edges in format
                 [head, tail, weight]. Weight is optional.
         """
-        self.__nodes = defaultdict(lambda: {"tails":[], "heads":[]})
+        self.__nodes = defaultdict(lambda: {"tails":[], "heads":[], "dummied": False})
+        self.__dummy = "dummy_" + "".join(\
+            map(lambda i: random.choice(ascii_lowercase), range(4)))
+        self.__nodes[self.__dummy]["dummied"] = True
         self.__edges = []
-        if edges is not None: pass
-    
+        if edges is not None: self.addEdgeList(edges)
+
+    @property
+    def dummy(self):
+        """str: Dummy node name"""
+        return self.__dummy
+
     @property
     def nodeCount(self):
-        """int: Count nodes"""
+        """int: Number of nodes"""
+        return len(self.__nodes) - 1
+        
+    @property
+    def __nodeCount(self):
+        """int: Number of nodes including dummy"""
         return len(self.__nodes)
     
     @property
     def edgeCount(self):
-        """int: Count edges"""
+        """int: Number of edges"""
+        return len(self.__edges) - len(self.__nodes[self.dummy]["tails"])
+    
+    @property
+    def __edgeCount(self):
+        """int: Number of edges including from dummy"""
         return len(self.__edges)
     
     def addEdge(self, tail, head, weight = None):
@@ -54,12 +74,20 @@ class Graph:
         weight = self.DefaultWeight if weight is None else weight
         
         # Add edge
-        idx = self.edgeCount
+        idx = self.__edgeCount
         self.__edges.append((tail, head, weight))
         
-        # Add nodes
+        # Add edge reference to nodes
         self.__nodes[head]["heads"].append(idx)
         self.__nodes[tail]["tails"].append(idx)
+        
+        # Add edges from dummy if new nodes
+        if not self.__nodes[head]["dummied"]:
+            self.__nodes[head]["dummied"] = True
+            self.addEdge(self.dummy, head, 0)
+        if not self.__nodes[tail]["dummied"]:
+            self.__nodes[tail]["dummied"] = True
+            self.addEdge(self.dummy, tail, 0)
 
     def addEdgeList(self, edges):
         """Add multiple edges from a list. Creates necessary nodes if missing.
@@ -70,15 +98,26 @@ class Graph:
         """
         for e in edges:
             self.addEdge(e[0], e[1], e[2] if len(e) > 2 else None)
-    
-    @staticmethod
-    def __reconstructPath(nodes, returnEdges):
-        """Reconstruct paths for shortest path algorithm results."""
+
+    def __reconstructPath(self, nodes, returnPaths):
+        """Reconstruct paths for shortest path algorithm results.
+        
+        Args:
+            nodes(:obj:`dict` with values :obj:`tuple`): Nodes with path
+                lengths and parent node.
+            returnPaths(boolean, optional): Indicator to return a list of edges.
+                Defaults to False (returns path length).
+        
+        Returns:
+            :obj:`dict` with values :obj:`tuple`: All nodes with their shortest
+                path length from starting node and [optional] full paths as an
+                ordered list of nodes.
+        """
         # Create return dictionary
         ret = dict(map(lambda k: (k, {"length":nodes[k][0]}), nodes.keys()))
         
         # Reconstruct full paths if required
-        if returnEdges:
+        if returnPaths:
             # Iterate through return dictionary
             for k in ret.keys():
                 # Set path to None and continue if node has not parent
@@ -95,21 +134,23 @@ class Graph:
                     ret[k]["path"].insert(0, parent)
                     parent = nodes[parent][1]
         
-        # Return
+        # Remove dummy and return
+        del ret[self.dummy]
         return ret
     
-    def spBellmanFord(self, node, returnEdges = False):
+    def spBellmanFord(self, node, returnPaths = False):
         """Return the shortest path from a single node to all other nodes using
             then Bellman-Ford algorithm.
         
         Args:
             node(:hashable:): Starting node.
-            returnEdges(boolean, optional): Indicator to return a list of edges.
+            returnPaths(boolean, optional): Indicator to return a list of edges.
                 Defaults to False (returns path length).
         
         Returns:
-            :obj:`dict`: All nodes with their shortest path length from starting
-                node and [optional] full paths as an ordered list of nodes.
+            :obj:`dict` with values :obj:`tuple`: All nodes with their shortest
+                path length from starting node and [optional] full paths as an
+                ordered list of nodes.
         """
         # Initialize working dictionaries and next edges to check
         curr = dict(map(lambda k: (k, (0, k) if k == node else (self.Inf, None)),\
@@ -118,7 +159,7 @@ class Graph:
         edges = self.__nodes[node]["tails"]
         
         # Iterate through maximum number of edges in valid paths
-        for i in xrange(1, self.nodeCount):
+        for i in xrange(1, self.__nodeCount):
             # Break if no edges to check (i.e. no nodes updated in previous
             # iteraton)
             if len(edges) == 0: break
@@ -149,7 +190,7 @@ class Graph:
             if curr[tail][0] + weight < curr[head][0]: return None
         
         # Return shortest paths
-        return Graph.__reconstructPath(curr, returnEdges)
+        return self.__reconstructPath(curr, returnPaths)
     
     @staticmethod
     def __swapHeapNodes(heap, nodes, i, j):
@@ -247,7 +288,7 @@ class Graph:
         del nodes[node[1]]
         return node
 
-    def spDijkstra(self, node, returnEdges = False, nodeWeights = {}):
+    def spDijkstra(self, node, returnPaths = False, nodeWeights = {}):
         """Return the shortest path from a single node to all other nodes using
             Dijkstra's algorithm. Possible to run against graphs with negative
             edge weights by specifying node weights as in Johnson's all points
@@ -255,15 +296,16 @@ class Graph:
         
         Args:
             node(:hashable:): Starting node.
-            returnEdges(boolean, optional): Indicator to return a list of edges.
+            returnPaths(boolean, optional): Indicator to return a list of edges.
                 Defaults to False (returns path length).
             nodeWeights(:obj:`dict`, optional): Node weights for correctly
                 calculating shortest paths with negative edge weights. Defaults
                 to zero for each node not specified.
         
         Returns:
-            :obj:`dict`: All nodes with their shortest path length from starting
-                node and [optional] full paths as an ordered list of nodes.
+            :obj:`dict` with values :obj:`tuple`: All nodes with their shortest
+                path length from starting node and [optional] full paths as an
+                ordered list of nodes.
         """
         # Initialize heap, not found nodes, and found nodes
         heap = map(lambda k:\
@@ -306,7 +348,49 @@ class Graph:
             found.keys()))
         
         # Return shortest paths
-        return Graph.__reconstructPath(found, returnEdges)   
+        return self.__reconstructPath(found, returnPaths)
+
+    def apspJonshon(self, returnPaths = False, silent = False):
+        """Return the shortest path from all nodes to all other nodes using
+            Johnson's algorithm.
+        
+        Args:
+            returnPaths(boolean, optional): Indicator to return a list of edges.
+                Defaults to False (returns path length).
+            silent(boolean, optional): Indicator to suppress console messages.
+        
+        Returns:
+            :obj:`dict` with values :obj:`dict` with values :obj:`tuple`: All
+                nodes with their shortest path lengths to all other nodes and
+                [optional] full paths as an ordered list of nodes.
+        """
+        # Run Bellman-Ford shortest path from dummy
+        spDummy = self.spBellmanFord(self.dummy)
+        
+        # Return None if negative cycle found
+        if spDummy is None: return None
+        
+        # Print progress message if not silent
+        if not silent:
+            print "No negative cycles detected. Finding shortest paths..."
+        
+        # Extract node weights from shortest path lengths
+        nodeWeights = dict(\
+            map(lambda k: (k, spDummy[k]["length"]), spDummy.keys()))
+        
+        # Run node-weighted Dijkstra's shortest path from all nodes
+        ret = {}
+        for (i, k) in enumerate(self.__nodes.keys()):
+            # Ignore dummy node
+            if k == self.dummy: continue
+        
+            # Print progress message if not silent
+            if not silent:
+                print "From node %s (%d of %d)..." % (k, i + 1, self.nodeCount)
+            
+            # Find shortest paths from current node and add to results
+            ret[k] = self.spDijkstra(k, returnPaths, nodeWeights)
+        return ret
         
 #
 # Main
@@ -315,7 +399,7 @@ class Graph:
 g = Graph()
 
 # Read edges from file
-with open('g_test_dijkstra.txt', 'r') as f:
+with open('g3.txt', 'r') as f:
     # Skip first line
     next(f)
     
@@ -326,6 +410,14 @@ with open('g_test_dijkstra.txt', 'r') as f:
 
 # Print graph summary
 print "Graph with %d nodes and %d edges." % (g.nodeCount, g.edgeCount)
-i = 4
-print g.spDijkstra(i, True)
-print g.spBellmanFord(i, True)
+# i = 4
+# print g.spDijkstra(i, True)
+# print g.spBellmanFord(i, True)
+apsp = g.apspJonshon()
+if apsp is None: print "Graph has at least one negative cycle!"
+else:
+    minOfMin = 0
+    for i in apsp.keys():
+        minOfThis = min(map(lambda j: apsp[i][j]["length"], apsp[i].keys()))
+        minOfMin = min([minOfMin, minOfThis])
+    print "Shortest, shortest path has length %d." % minOfMin
