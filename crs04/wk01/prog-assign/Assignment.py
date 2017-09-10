@@ -159,7 +159,7 @@ class Graph:
         nodes[iNode], nodes[jNode] = j, i
     
     @staticmethod
-    def __siftup(heap, nodes, pos, stopPos):
+    def __siftup(heap, nodes, pos, stopPos = 0):
         """Sifts node up heap from starting position up to stopping position.
             Helper for Dijkstra shortest path algorithm.
         
@@ -247,26 +247,33 @@ class Graph:
         del nodes[node[1]]
         return node
 
-    def spDijkstra(self, node, returnEdges = False):
+    def spDijkstra(self, node, returnEdges = False, nodeWeights = {}):
         """Return the shortest path from a single node to all other nodes using
-            Dijkstra's algorithm.
+            Dijkstra's algorithm. Possible to run against graphs with negative
+            edge weights by specifying node weights as in Johnson's all points
+            shortest path algorithm.
         
         Args:
             node(:hashable:): Starting node.
             returnEdges(boolean, optional): Indicator to return a list of edges.
                 Defaults to False (returns path length).
+            nodeWeights(:obj:`dict`, optional): Node weights for correctly
+                calculating shortest paths with negative edge weights. Defaults
+                to zero for each node not specified.
         
         Returns:
             :obj:`dict`: All nodes with their shortest path length from starting
                 node and [optional] full paths as an ordered list of nodes.
         """
         # Initialize heap, not found nodes, and found nodes
-        heap = map(lambda k: (\
-            0 if k == node else self.Inf,\
-            k,\
+        heap = map(lambda k:\
+            (0 if k == node else self.Inf, k,\
             k if k == node else None), self.__nodes.keys())
         nodes = dict(map(lambda (i, n): (n[1], i), enumerate(heap)))
         found = defaultdict(lambda: None)
+        
+        # Set default node weight to zero
+        nodeWeights = defaultdict(lambda: 0, nodeWeights)
         
         # Swap target node to beginning of heap
         Graph.__swapHeapNodes(heap, nodes, 0, nodes[node])
@@ -288,10 +295,15 @@ class Graph:
                 if found[head] is not None: continue
             
                 # Calculate new path length and update if less than current
-                newLen = n[0] + weight
+                newLen = n[0] + weight + nodeWeights[tail] - nodeWeights[head]
                 if newLen < heap[nodes[head]][0]:
                     heap[nodes[head]] = (newLen, head, tail)
-                    Graph.__siftup(heap, nodes, nodes[head], 0)
+                    Graph.__siftup(heap, nodes, nodes[head])
+        
+        # Remove node weights from path lenghts
+        found = dict(map(lambda k:\
+            (k, (found[k][0] - nodeWeights[node] + nodeWeights[k], found[k][1])),\
+            found.keys()))
         
         # Return shortest paths
         return Graph.__reconstructPath(found, returnEdges)   
