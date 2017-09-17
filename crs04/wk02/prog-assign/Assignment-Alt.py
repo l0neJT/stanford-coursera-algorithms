@@ -66,6 +66,7 @@ class tspGraph:
             self.addNode(n[0], n[1], n[2])
             
     def calcNodeDists(self):
+        """Calcuate distances between all nodes and save for later lookup.""" 
         self.__nodeDist = [[0 for x in range(self.nodeCount)]\
             for y in range(self.nodeCount)\
         ] 
@@ -93,14 +94,18 @@ class tspGraph:
         self.calcNodeDists()
 
         # Initialize working dictionary
-        ret = defaultdict(lambda: [self.Inf] * self.nodeCount)
+        curr = defaultdict(lambda: [self.Inf] * self.nodeCount)
 
         # Add single edge paths
         for i in xrange(1, self.nodeCount):
-            ret[1 + i**2][i] = self.__nodeDist[0][i]
+            curr[1 + i**2][i] = self.__nodeDist[0][i]
         
         # Iterate through maximum number of edges in valid paths
         for i in xrange(2, self.nodeCount):
+            # Swap current working dictionary to previous
+            prev = curr
+            curr = defaultdict(lambda: [self.Inf] * self.nodeCount)
+            
             # Print iteration
             print "Iteration", i, "started at time", datetime.now().time()
 
@@ -122,22 +127,22 @@ class tspGraph:
                         if k == j: continue
                         
                         # Calcuate new, full path length
-                        ln = ret[sMask_j][k] + self.__nodeDist[k][j]
+                        ln = prev[sMask_j][k] + self.__nodeDist[k][j]
                         
                         # Set path length to minimum
-                        ret[sMask][j] = min(ln, ret[sMask][j])
+                        curr[sMask][j] = min(ln, curr[sMask][j])
             
         # Calculate minimum return path
         fullMask = 2**self.nodeCount - 1
         for k in xrange(1, self.nodeCount):
             # Calcuate new, full path length
-            ln = ret[fullMask][k] + self.__nodeDist[k][0]
+            ln = curr[fullMask][k] + self.__nodeDist[k][0]
             
             # Set path length to minimum
-            ret[fullMask][0] = min(ln, ret[fullMask][0])
+            curr[fullMask][0] = min(ln, curr[fullMask][0])
         
         # Return shortest path length
-        return ret[fullMask][0]
+        return curr[fullMask][0]
 
 #
 # Main
