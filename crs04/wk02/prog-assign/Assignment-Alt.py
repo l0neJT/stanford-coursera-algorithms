@@ -9,6 +9,7 @@
 # Imports
 from collections import defaultdict
 from datetime import datetime
+from itertools import combinations
 
 class tspGraph:
     """Basic graph class with traveling salesman methods.
@@ -59,6 +60,70 @@ class tspGraph:
         """
         for n in nodes:
             self.addNode(n[0], n[1], n[2])
+            
+    def nodeDist(self, a, b):
+        return ((self.__nodes[a][0] - self.__nodes[b][0])**2 + \
+            (self.__nodes[a][1] - self.__nodes[b][1])**2
+        )**(0.5)
+            
+    def minTSPalt(self):
+        # Raise error if graph has too many nodes
+        if self.nodeCount > self.MaxNodeCount:
+            raise NotImplementedError("The graph is too large with %d nodes. \
+                Please restrict to graphs with %d or fewer nodes." %\
+                (self.nodeCount, self.MaxNodeCount)\
+            )
+        
+        # Create indexed dictionary of node keys for reverse lookup
+        idx = dict(map(lambda e: e, enumerate(self.__nodes.keys())))
+        
+        # Initialize working dictionary
+        ret = defaultdict(lambda: defaultdict(lambda: self.Inf))
+        ret[1][0] = 0
+        
+        # Add single edge paths
+        for i in xrange(1, self.nodeCount):
+            ret[1 + i**2][i] = self.nodeDist(idx[0], idx[i])
+        
+        # Iterate through maximum number of edges in valid paths
+        for i in xrange(2, self.nodeCount):
+            # Print iteration
+            print "Iteration", i, "started at time", datetime.now().time()
+
+            # Generate sets (excluding zero)
+            sets = combinations(range(1, self.nodeCount), i)
+            
+            # Iterate through each set
+            for s in sets:
+                # Calculate the set mask
+                sMask = 1 + sum(map(lambda i: 2**i , s))
+                
+                # Iterate through each node in the set
+                for j in s:
+                    # Calcualte the set mask without this node
+                    sMask_j = sMask - 2**j
+                    
+                    # Iterate through the other nodes
+                    for k in s:
+                        if k == j: continue
+                        
+                        # Calcuate new, full path length
+                        ln = ret[sMask_j][k] + self.nodeDist(idx[k], idx[j])
+                        
+                        # Set path length to minimum
+                        ret[sMask][j] = min(ln, ret[sMask][j])
+            
+        # Calculate minimum return path
+        fullMask = 2**self.nodeCount - 1
+        for k in ret[fullMask].keys():
+            # Calcuate new, full path length
+            ln = ret[fullMask][k] + self.nodeDist(idx[k], idx[0])
+            
+            # Set path length to minimum
+            ret[fullMask][0] = min(ln, ret[fullMask][0])
+        
+        # Return shortest path length
+        return ret[fullMask][0]
 
     def minTSP(self):
         """Return the shortest path length for traveling salesman.
@@ -138,4 +203,4 @@ with open('tsp.txt', 'r') as f:
 print "Graph with %d nodes." % (g.nodeCount)
 
 # Print shortest traveling salesman path
-print "Shortest traveling salesman path has length %.2f." % (g.minTSP())
+print "Shortest traveling salesman path has length %.2f." % (g.minTSPalt())
