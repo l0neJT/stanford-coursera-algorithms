@@ -32,7 +32,9 @@ class tspGraph:
             nodes(:obj:`list` of :obj:`list`, optional): List of nodes with
                 format (name, x, y).
         """
-        self.__nodes = defaultdict(lambda: None)
+        self.__nodes = []
+        self.__nodesRev = {}
+        self.__nodeDist = [[]]
         if nodes is not None: self.addNodeList(nodes)
 
     @property
@@ -49,7 +51,9 @@ class tspGraph:
             y (float): Y position of new node.
                 property DefaultWeight.
         """
-        self.__nodes[name] = (float(x), float(y))
+        i = self.nodeCount
+        self.__nodes.append((float(x), float(y)))
+        self.__nodesRev[name] = i
 
     def addNodeList(self, nodes):
         """Add multiple nodes from a list.
@@ -61,12 +65,23 @@ class tspGraph:
         for n in nodes:
             self.addNode(n[0], n[1], n[2])
             
-    def nodeDist(self, a, b):
-        return ((self.__nodes[a][0] - self.__nodes[b][0])**2 + \
-            (self.__nodes[a][1] - self.__nodes[b][1])**2
-        )**(0.5)
+    def calcNodeDists(self):
+        self.__nodeDist = [[0 for x in range(self.nodeCount)]\
+            for y in range(self.nodeCount)\
+        ] 
+        for i in xrange(0, self.nodeCount):
+            for j in xrange(0, self.nodeCount):
+                self.__nodeDist[i][j] = 0 if i == j else (
+                    (self.__nodes[i][0] - self.__nodes[j][0])**2 + \
+                    (self.__nodes[i][1] - self.__nodes[j][1])**2
+                )**(0.5)
             
-    def minTSPalt(self):
+    def minTSP(self):
+        """Return the shortest path length for traveling salesman.
+        
+        Returns:
+            float: Length of the minimum path visiting every node exactly once.
+        """
         # Raise error if graph has too many nodes
         if self.nodeCount > self.MaxNodeCount:
             raise NotImplementedError("The graph is too large with %d nodes. \
@@ -74,16 +89,15 @@ class tspGraph:
                 (self.nodeCount, self.MaxNodeCount)\
             )
         
-        # Create indexed dictionary of node keys for reverse lookup
-        idx = dict(map(lambda e: e, enumerate(self.__nodes.keys())))
-        
+        # Calculate all node distances
+        self.calcNodeDists()
+
         # Initialize working dictionary
-        ret = defaultdict(lambda: defaultdict(lambda: self.Inf))
-        ret[1][0] = 0
-        
+        ret = defaultdict(lambda: [self.Inf] * self.nodeCount)
+
         # Add single edge paths
         for i in xrange(1, self.nodeCount):
-            ret[1 + i**2][i] = self.nodeDist(idx[0], idx[i])
+            ret[1 + i**2][i] = self.__nodeDist[0][i]
         
         # Iterate through maximum number of edges in valid paths
         for i in xrange(2, self.nodeCount):
@@ -108,80 +122,22 @@ class tspGraph:
                         if k == j: continue
                         
                         # Calcuate new, full path length
-                        ln = ret[sMask_j][k] + self.nodeDist(idx[k], idx[j])
+                        ln = ret[sMask_j][k] + self.__nodeDist[k][j]
                         
                         # Set path length to minimum
                         ret[sMask][j] = min(ln, ret[sMask][j])
             
         # Calculate minimum return path
         fullMask = 2**self.nodeCount - 1
-        for k in ret[fullMask].keys():
+        for k in xrange(1, self.nodeCount):
             # Calcuate new, full path length
-            ln = ret[fullMask][k] + self.nodeDist(idx[k], idx[0])
+            ln = ret[fullMask][k] + self.__nodeDist[k][0]
             
             # Set path length to minimum
             ret[fullMask][0] = min(ln, ret[fullMask][0])
         
         # Return shortest path length
         return ret[fullMask][0]
-
-    def minTSP(self):
-        """Return the shortest path length for traveling salesman.
-        
-        Returns:
-            float: Length of the minimum path visiting every node exactly once.
-        """
-        # Raise error if graph has too many nodes
-        if self.nodeCount > self.MaxNodeCount:
-            raise NotImplementedError("The graph is too large with %d nodes. \
-                Please restrict to graphs with %d or fewer nodes." %\
-                (self.nodeCount, self.MaxNodeCount)\
-            )
-        
-        # Create node bitmasks and notter (for getting edges not in a set)
-        masks = dict(map(lambda (i, k): (k, 2**i), \
-            enumerate(self.__nodes.keys())\
-        ))
-        notter = 2**(self.nodeCount) - 1
-        
-        # Initialize working dictionaries
-        curr = {1:{1:0}}
-        prev = {}
-        
-        # Iterate through maximum number of edges in valid paths
-        for i in xrange(1, self.nodeCount + 1):
-            # Print iteration
-            print "Iteration", i, "started at time", datetime.now().time()
-            
-            # Swap working dictionaries
-            prev = curr
-            curr = defaultdict(lambda: defaultdict(lambda: self.Inf))
-            
-            # Iterate through previous node sets
-            for s in prev.keys():
-                # Get nodes not in set; NOTE: final iteration of outer for loop
-                # returns to starting node
-                notS = 1 if i == self.nodeCount else s ^ notter
-                
-                # Iterate through last node in set
-                for k in prev[s].keys():
-                    # Iterate through all nodes
-                    for j in self.__nodes.keys():
-                        # Calcuate new, full path length
-                        ln = prev[s][k] + (\
-                            (self.__nodes[k][0] - self.__nodes[j][0])**2 + \
-                            (self.__nodes[k][1] - self.__nodes[j][1])**2\
-                        )**(0.5)
-                        
-                        # Add path to current node if not in set and has minimum
-                        # length for current paths
-                        if notS & masks[j] == masks[j] and \
-                            curr[s | masks[j]][j] > ln\
-                        :
-                            curr[s | masks[j]][j] = ln
-        
-        # Return shortest path length
-        return curr[notter][1]
 
 #
 # Main
@@ -203,4 +159,4 @@ with open('tsp.txt', 'r') as f:
 print "Graph with %d nodes." % (g.nodeCount)
 
 # Print shortest traveling salesman path
-print "Shortest traveling salesman path has length %.2f." % (g.minTSPalt())
+print "Shortest traveling salesman path has length %.2f." % (g.minTSP())
