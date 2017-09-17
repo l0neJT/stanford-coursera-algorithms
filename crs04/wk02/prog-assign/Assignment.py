@@ -8,9 +8,7 @@
 
 # Imports
 from collections import defaultdict
-from heapq import heappush, heapify
-from string import ascii_lowercase
-import random
+from datetime import datetime
 
 class tspGraph:
     """Basic graph class with traveling salesman methods.
@@ -96,38 +94,45 @@ class tspGraph:
         notter = 2**(self.nodeCount) - 1
         
         # Initialize working dictionaries
-        curr = {1:(0,masks[1])}
+        curr = {1:{masks[1]:0}}
         prev = {}
         
         # Iterate through maximum number of edges in valid paths
         for i in xrange(1, self.nodeCount + 1):
+            # Print iteration
+            print "Iteration", i, "started at time", datetime.now().time()
+            
             # Swap working dictionaries
             prev = curr
-            curr = defaultdict(lambda: (self.Inf, None))
+            curr = defaultdict(lambda: defaultdict(lambda: self.Inf))
             
-            # Iterate through previous path node sets
+            # Iterate through previous node sets
             for s in prev.keys():
                 # Get nodes not in set; NOTE: final iteration of outer for loop
                 # returns to starting node
                 notS = 1 if i == self.nodeCount else s ^ notter
                 
-                # Get all edges incident to last node in path
-                edges = self.__nodes[prev[s][1]]["heads"]
-                edges.extend(self.__nodes[prev[s][1]]["tails"])
-                
-                # Iterate through all edges
-                for e in set(edges):
-                    edge = self.__edges[e]
-                    n = edge[1] if edge[0] == prev[s][1] else edge[0]
-                    ln = prev[s][0] + edge[2] * 1.0
+                # Iterate through last node in set
+                for k in prev[s].keys():
+                    # Get all incident edges
+                    edges = self.__nodes[k]["heads"]
+                    edges.extend(self.__nodes[k]["tails"])
                     
-                    # Add path to current node if not in set and has minimum
-                    # length for paths with same set
-                    if notS & masks[n] == masks[n] and curr[s | masks[n]][0] > ln:
-                        curr[s | masks[n]] = (ln, n)
+                    # Iterate through all edges
+                    for e in set(edges):
+                        edge = self.__edges[e]
+                        j = edge[1] if edge[0] == k else edge[0]
+                        ln = prev[s][k] + edge[2] * 1.0
+                        
+                        # Add path to current node if not in set and has minimum
+                        # length for current paths
+                        if notS & masks[j] == masks[j] and \
+                            curr[s | masks[j]][j] > ln\
+                        :
+                            curr[s | masks[j]][j] = ln
         
         # Return shortest path length
-        return min(map(lambda k: curr[k][0], curr.keys()))
+        return curr[notter][1]
 
 #
 # Main
@@ -137,7 +142,7 @@ nodes = []
 edges = []
 
 # Read nodes from file with euclidian x and y-coordinates
-with open('tsp-small.txt', 'r') as f:
+with open('tsp.txt', 'r') as f:
     # Skip first line
     next(f)
     
@@ -162,4 +167,4 @@ g = tspGraph(edges)
 print "Graph with %d nodes and %d edges." % (g.nodeCount, g.edgeCount)
 
 # Print shortest traveling salesman path
-print "Shortest traveling salesman path has length %d." % (g.minTSP())
+print "Shortest traveling salesman path has length %.2f." % (g.minTSP())
