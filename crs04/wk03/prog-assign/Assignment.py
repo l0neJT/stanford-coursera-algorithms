@@ -95,40 +95,47 @@ class tspGraph:
         dists = pdist(self.__nodes)
         
         # Initialize path with zeroth node
-        path = defaultdict(lambda: None)
-        path[0] = (0, None)
-        lastNode = 0
+        path = [(0, 0)]
+        last = 0
+        
+        # Initialized search space
+        search = range(1, self.nodeCount)
         
         # While path is incomplete (i.e., iterate n - 1 times)
-        for i in xrange(1, self.nodeCount):
+        for n in xrange(1, self.nodeCount):
             # Capture start time for run time analysis
-            # start = time.time()
+            start = time.time()
             
             # Initialize nearest neighbor
-            nn = (self.Inf, None)
+            nnD, nnI, schI = self.Inf, None, None
             
-            # Iterate through nodes not yet in path
-            for j, d in enumerate(squareform(dists)[lastNode]):
-                if j == lastNode: continue
-                if path[j] is not None: continue
-            
+            # Iterate through nodes in search space
+            for i, this in enumerate(search):
+                # Get distance from last node
+                d = dists[tspGraph.condensedIndex(last, this, self.nodeCount)]
+                
                 # Update nearest neighbor if this node closer
-                if nn[0] > d or (nn[0] == d and j < nn[1]): nn = (d, j)
+                if nnD > d or (nnD == d and this < nnI):
+                    nnD, nnI, schI = d, this, i
             
             # Add nearest neighbor to path
-            path[nn[1]] = (nn[0], lastNode)
+            path.append((nnI, nnD))
+            
+            # Remove nearest neighbor from search space
+            del search[schI]
             
             # Set neighbor as last node
-            lastNode = nn[1]
+            last = nnI
             
             # Print ellapsed time
-            # print "Iteration %d took %s seconds..." % (i, time.time() - start)
+            if n % 100 == 0:
+                print "Iteration %d took %s seconds..." % (n, time.time() - start)
         
         # Finalize path by returning to starting node
-        path[0] = (squareform(dists)[lastNode][0], lastNode)
+        path[0] = (0, dists[tspGraph.condensedIndex(last, 0, self.nodeCount)])
         
         # Return path length
-        return sum(map(lambda k: path[k][0], path.keys()))
+        return sum(map(lambda p: p[1], path))
 
 def main():
     # Initialize graph node array
