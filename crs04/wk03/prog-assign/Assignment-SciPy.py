@@ -34,7 +34,7 @@ def main():
     nodes = []
     
     # Read nodes from file with euclidian x and y-coordinates
-    with open('nn_10000.txt', 'r') as f:
+    with open('nn_10.txt', 'r') as f:
         # Skip first line
         next(f)
         
@@ -50,8 +50,7 @@ def main():
     dists = pdist(nodes, "euclidean")
     
     # Print pairwise distances for debugging
-    print "Calculated %d distances. First ten:" % len(dists)
-    print dists[:10]
+    print "Calculated %d distances." % len(dists)
 
 if __name__ == "__main__":
     start = time.time()

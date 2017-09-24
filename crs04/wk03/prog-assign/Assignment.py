@@ -8,8 +8,7 @@
 
 # Imports
 from collections import defaultdict
-from scipy.spatial.distance import pdist
-from heapq import heappush
+from scipy.spatial.distance import pdist, squareform
 import time
 
 class tspGraph:
@@ -102,32 +101,31 @@ class tspGraph:
         
         # While path is incomplete (i.e., iterate n - 1 times)
         for i in xrange(1, self.nodeCount):
-            # Initialize min-heap of distances from last node
-            distFromLast = []
+            # Capture start time for run time analysis
+            # start = time.time()
+            
+            # Initialize nearest neighbor
+            nn = (self.Inf, None)
             
             # Iterate through nodes not yet in path
-            for j in xrange(1, self.nodeCount):
+            for j, d in enumerate(squareform(dists)[lastNode]):
                 if j == lastNode: continue
                 if path[j] is not None: continue
             
-                # Insert into heap of distances from last node
-                heappush(distFromLast, (\
-                    dists[tspGraph.condensedIndex(lastNode, j, len(dists))],\
-                    j\
-                ))
+                # Update nearest neighbor if this node closer
+                if nn[0] > d or (nn[0] == d and j < nn[1]): nn = (d, j)
             
             # Add nearest neighbor to path
-            nn = distFromLast.pop(0)
             path[nn[1]] = (nn[0], lastNode)
             
             # Set neighbor as last node
             lastNode = nn[1]
+            
+            # Print ellapsed time
+            # print "Iteration %d took %s seconds..." % (i, time.time() - start)
         
-        # Finalize path but returning to starting node
-        path[0] = (\
-            dists[tspGraph.condensedIndex(lastNode, 0, len(dists))],\
-            lastNode\
-        )
+        # Finalize path by returning to starting node
+        path[0] = (squareform(dists)[lastNode][0], lastNode)
         
         # Return path length
         return sum(map(lambda k: path[k][0], path.keys()))
@@ -137,7 +135,7 @@ def main():
     g = tspGraph()
     
     # Read nodes from file with euclidian x and y-coordinates
-    with open('nn_1000.txt', 'r') as f:
+    with open('nn.txt', 'r') as f:
         # Skip first line
         next(f)
         
@@ -158,4 +156,4 @@ def main():
 if __name__ == "__main__":
     start = time.time()
     main()
-    print("--- %s seconds ---" % (time.time() - start))
+    print("Total runtime: %s seconds" % (time.time() - start))
