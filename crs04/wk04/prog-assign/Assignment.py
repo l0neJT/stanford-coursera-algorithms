@@ -187,7 +187,7 @@ def main():
     g = twoSAT()
     
     # Read clauses from file
-    with open("2sat4.txt", "r") as f:
+    with open("2sat6.txt", "r") as f:
         # Skip first line
         next(f)
         
